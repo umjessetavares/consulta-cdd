@@ -31,6 +31,7 @@ const cddDatabase = {
     "154": "Subconsciente e estados alterados",
     "155": "Psicologia diferencial e do desenvolvimento",
     "158": "Psicologia aplicada (Autoajuda)",
+    "158.1": "Comportamento, Auto ajuda, Aperfeiçoamento pessoal, Equilíbrio pessoal",
     "160": "Lógica",
     "170": "Ética (Filosofia moral)",
     "180": "Filosofia antiga, medieval e oriental",
