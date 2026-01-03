@@ -1,3 +1,14 @@
+/**
+ * AVISO DE PROPRIEDADE INTELECTUAL
+ * * O código deste arquivo (estrutura JSON) é distribuído sob licença MIT.
+ * ENTRETANTO, os valores de texto (As descrições da Classificação Decimal de Dewey)
+ * são propriedade intelectual da OCLC (Online Computer Library Center).
+ * * Estes dados são utilizados neste projeto estritamente para fins 
+ * educacionais, de estudo pessoal e referência local (Fair Use).
+ * A redistribuição comercial destes dados específicos não é autorizada 
+ * pela licença MIT do restante do projeto.
+ * * Fonte de referência: OCLC Dewey Summaries.
+ */
 const cddDatabase = {
     "000": "Generalidades e Ciência da Computação",
     "001": "Conhecimento e Teoria",
