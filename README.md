@@ -30,4 +30,5 @@ Este projeto foi criado para facilitar a vida de bibliotecários, estudantes e o
 
 ## Licença
 O código fonte deste projeto é distribuído sob a licença **MIT**.
+
 *Nota: Os dados da Classificação Decimal de Dewey (CDD) são propriedade intelectual da OCLC e são utilizados aqui para fins de consulta e referência.*
