@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#2563eb">
-    <title>Consulta CDD </title>
+    <title>Consulta CDD</title>
     
     <link rel="manifest" href="manifest.json">
 
@@ -201,9 +201,25 @@
 
     const input = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
+    let timeoutId; // Variável para o Debounce
+
+    // Função para remover acentos ---
+    function removeAcentos(str) {
+        if (!str) return "";
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
 
     input.addEventListener('input', (e) => {
-        const rawValue = e.target.value; 
+        // Debounce (Delay na digitação) ---
+        clearTimeout(timeoutId); // Cancela o timer anterior se digitar rápido
+        
+        timeoutId = setTimeout(() => {
+            // A lógica de busca só roda 300ms depois que o usuário PARAR de digitar
+            executarBusca(e.target.value);
+        }, 300);
+    });
+
+    function executarBusca(rawValue) {
         const cleanValue = rawValue.trim();
         
         if (cleanValue.length === 0) {
@@ -240,14 +256,16 @@
 
         } else {
             // --- LÓGICA DE TEXTO (Palavra-chave) ---
-            const searchTerm = cleanValue.toLowerCase();
+            // Usa a função remove acentos para normalizar a busca
+            const searchTerm = removeAcentos(cleanValue);
             let count = 0;
-            const maxResults = 30; // Proteção de performance
+            const maxResults = 30;
 
             for (const [code, desc] of Object.entries(cddDatabase)) {
-                if (desc.toLowerCase().includes(searchTerm)) {
-                    // Aplica o Highlight
-                    const highlightedDesc = highlightText(desc, searchTerm);
+                // Compara texto sem acento com busca sem acento
+                if (removeAcentos(desc).includes(searchTerm)) {
+                    // Aplica o Highlight (usamos o termo original para tentar grifar visualmente)
+                    const highlightedDesc = highlightText(desc, cleanValue);
                     resultsHTML += buildCardHTML(code, "Encontrado", highlightedDesc, true);
                     
                     count++;
@@ -261,7 +279,7 @@
         }
 
         resultsArea.innerHTML = resultsHTML;
-    });
+    }
 
     function clearSearch() {
         input.value = '';
@@ -270,13 +288,19 @@
     }
 
     function highlightText(text, term) {
-        // Regex seguro para substituir ignorando case
-        const regex = new RegExp(`(${term})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+        // Remove acentos do termo para o regex funcionar melhor visualmente
+        const cleanTerm = removeAcentos(term);
+        // Tenta criar um regex tolerante
+        // Highlight perfeito com acentos é complexo, aqui é focado em encontrar o termo
+        try {
+            const regex = new RegExp(`(${term})`, 'gi');
+            return text.replace(regex, '<mark>$1</mark>');
+        } catch (e) {
+            return text;
+        }
     }
 
     function buildCardHTML(code, tagLabel, content, exists) {
-        // Lógica de Cores: Pega o primeiro dígito
         const firstDigit = code.charAt(0);
         const colorClass = `class-${!isNaN(firstDigit) ? firstDigit : '0'}`;
         
