@@ -2,21 +2,16 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Busca CDD Pro</title>
-    
-    <meta name="theme-color" content="#2563eb">
-    <link rel="manifest" href="manifest.json">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta Rápida de CDD</title>
     <style>
         :root {
             --primary: #2563eb;
-            --bg: #f1f5f9;
+            --bg: #f8fafc;
             --card-bg: #ffffff;
             --text: #1e293b;
             --subtext: #64748b;
             --border: #e2e8f0;
-            --warning: #d97706;
         }
 
         body {
@@ -25,117 +20,74 @@
             color: var(--text);
             display: flex;
             justify-content: center;
-            padding: 20px;
-            margin: 0;
+            align-items: center;
             min-height: 100vh;
+            margin: 0;
+            padding: 20px;
         }
 
         .container {
             background: var(--card-bg);
             width: 100%;
             max-width: 600px;
-            height: fit-content;
-            padding: 1.5rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         h1 {
             font-size: 1.5rem;
-            margin: 0 0 0.5rem 0;
+            margin-bottom: 0.5rem;
             color: var(--primary);
-            text-align: center;
         }
 
         p.subtitle {
             color: var(--subtext);
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             font-size: 0.9rem;
-            text-align: center;
         }
 
-        /* --- Estilo da Busca com Botão X --- */
-        .search-wrapper {
+        .search-box {
             position: relative;
-            display: flex;
-            align-items: center;
             margin-bottom: 2rem;
         }
 
         input {
             width: 100%;
-            padding: 1rem 3rem 1rem 1rem; /* Espaço para o botão X na direita */
+            padding: 1rem;
             font-size: 1.1rem;
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
             outline: none;
-            transition: all 0.2s;
-            background: #f8fafc;
         }
 
         input:focus {
             border-color: var(--primary);
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
         }
 
-        .clear-btn {
-            position: absolute;
-            right: 10px;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: var(--subtext);
-            cursor: pointer;
-            padding: 5px;
-            display: none; /* Escondido por padrão */
-            border-radius: 50%;
-        }
-        
-        .clear-btn:hover {
-            background-color: #e2e8f0;
-            color: var(--text);
-        }
-
-        /* Mostra o botão X quando o input não está vazio (controlado via JS ou CSS pseudo-class hack) */
-        input:not(:placeholder-shown) + .clear-btn {
-            display: block;
-        }
-
-        /* --- Resultados --- */
         .results {
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
+            gap: 1rem;
         }
 
         .level-card {
-            background: #f8fafc;
+            background: #f1f5f9;
             padding: 1rem;
-            border-radius: 10px;
-            border-left: 5px solid var(--subtext);
-            animation: slideUp 0.3s ease-out;
-            transition: transform 0.2s;
-        }
-
-        .level-card:hover {
-            transform: translateX(2px);
+            border-radius: 8px;
+            border-left: 4px solid var(--subtext);
+            animation: fadeIn 0.3s ease-in-out;
         }
 
         .level-card.active {
             background: #eff6ff;
             border-left-color: var(--primary);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .level-card.warning {
-            border-left-color: var(--warning);
-            background: #fffbeb;
         }
 
         .level-tag {
-            font-size: 0.7rem;
-            font-weight: 700;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--subtext);
@@ -143,37 +95,25 @@
             display: block;
         }
 
-        .level-content {
-            display: flex;
-            flex-direction: column;
-        }
-
         .level-code {
             font-family: 'Courier New', monospace;
-            font-weight: 800;
-            font-size: 1.2rem;
-            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-right: 0.5rem;
         }
 
         .level-desc {
             font-weight: 500;
-            line-height: 1.4;
-        }
-
-        .desc-missing {
-            color: var(--warning);
-            font-style: italic;
         }
 
         .empty-state {
             text-align: center;
             color: var(--subtext);
             font-style: italic;
-            padding: 2rem;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -181,124 +121,122 @@
 <body>
 
 <div class="container">
-    <h1>Busca CDD</h1>
-    <p class="subtitle">Digite o código (ex: 512) ou assunto (ex: Direito)</p>
+    <h1>Classificação Decimal de Dewey</h1>
+    <p class="subtitle">Digite o código para visualizar a hierarquia (Ex: 512, 340)</p>
     
-    <div class="search-wrapper">
-        <input type="text" id="searchInput" placeholder="Buscar..." autocomplete="off" autofocus>
-        <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Digite o código (apenas números)..." maxlength="6" autofocus>
     </div>
 
     <div id="resultsArea" class="results">
-        <div class="empty-state">Faça a sua consulta.</div>
+        <div class="empty-state">Aguardando entrada...</div>
     </div>
 </div>
 
-<script src="dados.js"></script>
-
 <script>
-    // Verifica conexão com o banco
-    if (typeof cddDatabase === 'undefined') {
-        document.getElementById('resultsArea').innerHTML = 
-            '<div class="empty-state" style="color:red">Erro: arquivo dados.js não encontrado!</div>';
-    }
+    // --- 1. BASE DE DADOS (Sumários Principais) ---
+    // Estrutura profissional: Chave (String) -> Valor (String)
+    const cddDatabase = {
+        // Classe 000
+        "000": "Generalidades", "010": "Bibliografia", "020": "Biblioteconomia", "030": "Enciclopédias gerais",
+        
+        // Classe 100
+        "100": "Filosofia e Psicologia", "110": "Metafísica", "120": "Epistemologia", "130": "Parapsicologia e ocultismo",
+        "140": "Escolas filosóficas", "150": "Psicologia", "160": "Lógica", "170": "Ética",
+        
+        // Classe 200
+        "200": "Religião", "210": "Filosofia da religião", "220": "Bíblia", "230": "Teologia cristã",
+        
+        // Classe 300
+        "300": "Ciências Sociais", "310": "Estatística", "320": "Ciência política", "330": "Economia",
+        "340": "Direito", "341": "Direito internacional", "342": "Direito constitucional",
+        "350": "Administração pública", "360": "Serviço social", "370": "Educação",
+        
+        // Classe 400
+        "400": "Linguagem", "410": "Linguística", "420": "Inglês e inglês antigo", "460": "Espanhol e Português",
+        
+        // Classe 500
+        "500": "Ciências Naturais e Matemática", "510": "Matemática", "512": "Álgebra", "512.5": "Álgebra Linear",
+        "520": "Astronomia", "530": "Física", "540": "Química", "550": "Ciências da Terra",
+        "560": "Paleontologia", "570": "Ciências da vida", "580": "Plantas (Botânica)", "590": "Animais (Zoologia)",
+        
+        // Classe 600
+        "600": "Tecnologia (Ciências Aplicadas)", "610": "Medicina e saúde", "620": "Engenharia", "630": "Agricultura",
+        "640": "Gestão doméstica", "650": "Gestão e serviços auxiliares",
+        
+        // Classe 700
+        "700": "Artes", "710": "Urbanismo e paisagismo", "720": "Arquitetura", "730": "Artes plásticas",
+        "740": "Desenho e artes decorativas", "750": "Pintura", "760": "Artes gráficas", "770": "Fotografia",
+        "780": "Música", "790": "Artes recreativas e de espetáculo",
+        
+        // Classe 800
+        "800": "Literatura", "810": "Literatura americana", "820": "Literatura inglesa", "869": "Literatura portuguesa e brasileira",
+        
+        // Classe 900
+        "900": "História e Geografia", "910": "Geografia e viagens", "920": "Biografia e genealogia",
+        "930": "História do mundo antigo", "940": "História da Europa", "980": "História da América do Sul", "981": "História do Brasil"
+    };
 
+    // --- 2. LÓGICA DO SISTEMA ---
     const input = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
 
     input.addEventListener('input', (e) => {
-        const rawValue = e.target.value; 
-        const cleanValue = rawValue.trim();
+        const rawValue = e.target.value.trim();
         
-        if (cleanValue.length === 0) {
+        // Limpa se estiver vazio
+        if (rawValue.length === 0) {
             resultsArea.innerHTML = '<div class="empty-state">Aguardando entrada...</div>';
             return;
         }
 
+        // Lógica de Hierarquia (Pai -> Filho -> Neto)
+        // Normaliza a entrada para buscar na base
         let resultsHTML = '';
-        const isNumberSearch = !isNaN(cleanValue.charAt(0)); // Verifica se começa com número
+        
+        // 1. Nível Centena (ex: 500)
+        if (rawValue.length >= 1) {
+            const level1Code = rawValue.charAt(0) + "00";
+            resultsHTML += createCard(level1Code, "Classe Principal");
+        }
 
-        if (isNumberSearch) {
-            // --- MODO 1: BUSCA POR CÓDIGO (Hierárquica) ---
-            
-            // 1. Centena (Ex: 500)
-            if (cleanValue.length >= 1) {
-                const level1 = cleanValue.charAt(0) + "00";
-                resultsHTML += createCard(level1, "Classe Principal", false);
+        // 2. Nível Dezena (ex: 510)
+        if (rawValue.length >= 2) {
+            const level2Code = rawValue.substring(0, 2) + "0";
+            // Só mostra se for diferente da centena (evita duplicar 500 e 500)
+            if (level2Code !== rawValue.charAt(0) + "00") {
+                resultsHTML += createCard(level2Code, "Divisão");
             }
+        }
 
-            // 2. Dezena (Ex: 510)
-            if (cleanValue.length >= 2) {
-                const level2 = cleanValue.substring(0, 2) + "0";
-                // Evita duplicar se for 500
-                if (level2 !== cleanValue.charAt(0) + "00") {
-                    resultsHTML += createCard(level2, "Divisão", false);
+        // 3. Nível Específico (ex: 512 ou 512.5)
+        if (rawValue.length >= 3) {
+            // Se o código digitado for exato (ex: 512), mostramos ele como "Seção"
+            if (rawValue.length === 3 || rawValue.includes('.')) {
+                 // Verifica se não é igual à dezena (ex: digitar 510)
+                if (rawValue !== rawValue.substring(0, 2) + "0") {
+                    resultsHTML += createCard(rawValue, "Seção / Específico", true);
                 }
-            }
-
-            // 3. Específico (Ex: 512 ou 512.5)
-            if (cleanValue.length >= 3) {
-                const level2 = cleanValue.substring(0, 2) + "0";
-                // Evita duplicar se for 510
-                if (cleanValue !== level2) {
-                    // Aqui passamos 'true' para destacar que é o termo atual
-                    resultsHTML += createCard(cleanValue, "Específico / Seção", true);
-                }
-            }
-
-        } else {
-            // --- MODO 2: BUSCA POR TEXTO (Palavra-chave) ---
-            const searchTerm = cleanValue.toLowerCase();
-            let count = 0;
-            const maxResults = 20; // Limite para não travar
-
-            for (const [code, desc] of Object.entries(cddDatabase)) {
-                if (desc.toLowerCase().includes(searchTerm)) {
-                    resultsHTML += createCard(code, "Resultado da Busca", true);
-                    count++;
-                    if (count >= maxResults) break;
-                }
-            }
-
-            if (count === 0) {
-                resultsHTML = '<div class="empty-state">Nenhum termo encontrado na base.</div>';
             }
         }
 
         resultsArea.innerHTML = resultsHTML;
     });
 
-    // Função para limpar a busca
-    function clearSearch() {
-        input.value = '';
-        resultsArea.innerHTML = '<div class="empty-state">Pronto para buscar.</div>';
-        input.focus();
-    }
-
-    // Função Geradora de Cartões
-    function createCard(code, tagLabel, highlight) {
-        // Verifica se o código existe na base de dados
-        const exists = cddDatabase.hasOwnProperty(code);
+    function createCard(code, label, isActive = false) {
+        const description = cddDatabase[code] || "Descrição não cadastrada ou código inválido";
+        const activeClass = isActive ? 'active' : '';
         
-        let description = "";
-        let descClass = "level-desc";
-        let cardClass = highlight ? "level-card active" : "level-card";
-
-        if (exists) {
-            description = cddDatabase[code];
-        } else {
-            // Se não existe, mostramos aviso
-            description = "Código não cadastrado na base";
-            descClass += " desc-missing"; // Texto laranja
-            if(highlight) cardClass += " warning"; // Fundo amarelado
-        }
+        // Se a descrição não existe e não é o código que o usuário está digitando ativamente,
+        // podemos optar por ocultar ou mostrar aviso. Aqui mostramos aviso visual.
+        const opacityStyle = cddDatabase[code] ? '' : 'opacity: 0.6;';
 
         return `
-            <div class="${cardClass}">
-                <span class="level-tag">${tagLabel}</span>
-                <div class="level-content">
+            <div class="level-card ${activeClass}" style="${opacityStyle}">
+                <span class="level-tag">${label}</span>
+                <div>
                     <span class="level-code">${code}</span>
-                    <span class="${descClass}">${description}</span>
+                    <span class="level-desc">${description}</span>
                 </div>
             </div>
         `;
