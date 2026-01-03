@@ -3,8 +3,8 @@
 > Uma ferramenta web progressiva (PWA) leve, offline e rápida para consulta de códigos de classificação biblioteconômica.
 
 ![Status](https://img.shields.io/badge/Status-Funcional-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
-![Platform](https://img.shields.io/badge/Plataforma-Web%20%7C%20Android-orange)
+![Licença](https://img.shields.io/badge/License-MIT-yellow)
+![Platforma](https://img.shields.io/badge/Plataforma-Web-orange)
 
 ## Acesse Agora
 **[Clique aqui para usar o App](https://tr.ee/consulta)**
@@ -26,7 +26,7 @@ Este projeto foi criado para facilitar a vida de bibliotecários, estudantes e o
 ## Tecnologias
 - **HTML5 & CSS3:** Design responsivo e moderno.
 - **JavaScript:** Lógica de busca e renderização sem frameworks pesados.
-- **JSON Structure:** Base de dados desacoplada em arquivo separado.
+- **JSON:** Base de dados simples e desacoplada em arquivo separado.
 
 ## Licença
 O código fonte deste projeto é distribuído sob a licença **MIT**.
