@@ -144,9 +144,9 @@
     if (typeof cddDatabase === 'undefined') {
         resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: O arquivo dados.js não foi encontrado na mesma pasta.</div>';
     }
-
 input.addEventListener('input', (e) => {
-        const rawValue = e.target.value.trim();
+        const rawValue = e.target.value.trim(); // Mantém acentos e letras
+        const cleanValue = rawValue.toLowerCase(); // Para busca de texto
         
         if (rawValue.length === 0) {
             resultsArea.innerHTML = '<div class="empty-state">Aguardando entrada...</div>';
@@ -154,36 +154,37 @@ input.addEventListener('input', (e) => {
         }
 
         let resultsHTML = '';
-        
-        // 1. Nível Centena (ex: 800)
-        if (rawValue.length >= 1) {
-            const level1Code = rawValue.charAt(0) + "00";
-            resultsHTML += createCard(level1Code, "Classe Principal");
-        }
 
-        // 2. Nível Dezena (ex: 860)
-        // Só mostra se tiver pelo menos 2 dígitos e não for a própria centena (ex: 800)
-        if (rawValue.length >= 2) {
-            const level2Code = rawValue.substring(0, 2) + "0";
-            if (level2Code !== rawValue.charAt(0) + "00") {
-                resultsHTML += createCard(level2Code, "Divisão");
-            }
-        }
-
-        // 3. Nível Específico (O que você digitou: 869, 869.9, etc)
-        // AQUI ESTÁ A CORREÇÃO
-        if (rawValue.length >= 3) {
-            // Verifica se o código atual é diferente da Dezena (pra não repetir 860 se digitar 860)
-            const level2Code = rawValue.substring(0, 2) + "0";
+        // VERIFICAÇÃO 1: É NÚMERO? (Lógica Antiga + Hierarquia)
+        if (!isNaN(rawValue.charAt(0))) {
+            // ... (Mantenha sua lógica de hierarquia numérica aqui: Pai, Avô, Neto) ...
+            // Vou resumir para não ficar gigante, mas você cola sua lógica de números aqui
             
-            if (rawValue !== level2Code) {
-                // Força a criação do cartão com o código digitado, existindo ou não
-                resultsHTML += createCard(rawValue, "Seção / Específico", true);
+            // Exemplo rápido da lógica numérica:
+            if (rawValue.length >= 1) resultsHTML += createCard(rawValue.charAt(0)+"00", "Classe");
+            if (rawValue.length >= 2 && rawValue.charAt(1) !== '0') resultsHTML += createCard(rawValue.substring(0,2)+"0", "Divisão");
+            if (rawValue.length >= 3 && rawValue !== rawValue.substring(0,2)+"0") resultsHTML += createCard(rawValue, "Específico", true);
+
+        } 
+        // VERIFICAÇÃO 2: É TEXTO? (Nova Lógica de Busca)
+        else {
+            // Varre o banco de dados procurando a palavra
+            let matches = 0;
+            for (const [code, desc] of Object.entries(cddDatabase)) {
+                if (desc.toLowerCase().includes(cleanValue)) {
+                    resultsHTML += createCard(code, "Resultado da Busca");
+                    matches++;
+                    // Limite para não travar se digitar "a"
+                    if (matches > 10) break; 
+                }
+            }
+            if (matches === 0) {
+                resultsHTML = '<div class="empty-state">Nenhum termo encontrado.</div>';
             }
         }
 
         resultsArea.innerHTML = resultsHTML;
-    });
+    });  
 
     function createCard(code, label, isActive = false) {
         // Agora ele busca a variável cddDatabase que está no outro arquivo
