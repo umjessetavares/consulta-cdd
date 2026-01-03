@@ -1,16 +1,48 @@
 const cddDatabase = {
     // --- 000: GENERALIDADES & COMPUTAÇÃO ---
     "000": "Generalidades e Ciência da Computação",
-    "001": "Conhecimento",
+    "001": "Conhecimento e Teoria", // [Atualizado]
+    "001.4": "Métodos de estudo, Metodologia e Pesquisa", 
+    "001.42": "Pesquisa científica", 
+    "001.94": "Mistérios e fatos misteriosos (Pirâmides, etc.)", 
+    "001.942": "Discos voadores, Óvnis", 
+    "001.944": "Monstros e temas relacionados", 
     "002": "O livro",
     "003": "Sistemas",
     "004": "Processamento de dados e Ciência da Computação",
+    "004.03": "Dicionário de computação", 
+    "004.07": "Computação – Estudo e ensino", 
     "004.6": "Redes de computadores",
+    "004.678": "Internet", 
     "005": "Programação, software e dados",
     "005.1": "Desenvolvimento de software",
     "006": "Métodos especiais (IA, Gráficos)",
-    "010": "Bibliografia",
+    
+    // --- 010: BIBLIOGRAFIAS (Expandido via Editora IGP) ---
+    "010": "Bibliografias",
+    "011": "Bibliografias gerais", 
+    "012": "Bibliografias e catálogos individuais", 
+    "013": "Bibliografias e catálogos de autores por classes específicas", 
+    "014": "Bibliografias e catálogos de trabalhos anônimos ou com pseudônimos", 
+    "015": "Bibliografia e catálogos de trabalhos de lugares específicos", 
+    "016": "Bibliografia e catálogo de trabalhos de assuntos específicos", 
+    "016.981": "Bibliografia do Brasil (ex: BH)", 
+    "017": "Catálogos de bibliotecas privadas, públicas, leilões", 
+    "018": "Catálogos arranjados por autor, assunto, data", 
+    "019": "Catálogos dicionário, Arquivos e técnicas de arquivo", 
+
+    // --- 020: BIBLIOTECONOMIA (Expandido via Editora IGP) ---
     "020": "Biblioteconomia e Ciência da Informação",
+    "021": "Conexão e relacionamento entre bibliotecas, arquivos e centros", 
+    "022": "Administração de planta física (prédios, equipamentos)", 
+    "023": "Administração de pessoal", 
+    "025": "Operações e rotinas de bibliotecas e documentação", // [Atualizado]
+    "025.1": "Administração de bibliotecas", 
+    "025.2": "Aquisição e desenvolvimento da coleção", 
+    "025.3": "Análise bibliográfica e controle (Catalogação)", 
+    "025.4": "Análises de assuntos e controle (CDD, CDU)", 
+    "025.5": "Serviços aos usuários (Referência)", 
+
     "030": "Enciclopédias gerais",
     "050": "Publicações seriadas e revistas",
     "060": "Organizações gerais e museologia",
@@ -104,7 +136,8 @@ const cddDatabase = {
     "470": "Línguas itálicas (Latim)",
     "480": "Línguas helênicas (Grego)",
     "490": "Outras línguas",
-// --- 500: CIÊNCIAS NATURAIS ---
+
+    // --- 500: CIÊNCIAS NATURAIS ---
     "500": "Ciências naturais e matemática",
     "510": "Matemática",
     "511": "Princípios gerais da matemática",
@@ -211,6 +244,11 @@ const cddDatabase = {
     "914": "Geografia da Europa",
     "918": "Geografia da América do Sul",
     "920": "Biografia, genealogia, insígnias",
+    // [Seção 928 adicionada via Editora IGP]
+    "928": "Biografias de escritores e personagens históricos", 
+    "928.1": "Escritores americanos", 
+    "928.69": "Escritores portugueses", 
+    "928.6981": "Escritores brasileiros", 
     "930": "História do mundo antigo",
     "931": "China antiga",
     "932": "Egito antigo",
