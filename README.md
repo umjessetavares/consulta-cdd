@@ -18,16 +18,19 @@ Este projeto foi criado para facilitar a vida de bibliotecários, estudantes e o
 3. **Simplicidade:** Interface limpa e direta.
 
 ## Plataforma e Compatibilidade
-O Busca CDD é um Progressive Web App (PWA) — ou seja, é uma aplicação web que pode ser instalada no dispositivo a partir do navegador. Pontos importantes:
+O Busca CDD é um Progressive Web App (PWA) — ou seja, é uma aplicação web que pode ser instalada no dispositivo a partir do navegador. 
+
+Pontos importantes:
+
 - Requer HTTPS para funcionar corretamente como PWA (service worker e cache).
 - Suporte completo em: Chrome, Edge, Firefox (desktop e Android).
-- iOS/Safari: suporta instalação via "Adicionar à Tela de Início" e cache básico, mas possui limitações (ex.: armazenamento de cache e execução de Service Workers é mais restrito; push notifications podem não estar disponíveis).
-- Funciona em desktop e em dispositivos móveis — porém não é um aplicativo nativo (não usa código nativo das lojas).
+- iOS/Safari: suporta instalação via "Adicionar à Tela de Início" e cache básico, mas possui limitações.
+- Funciona em desktop e em dispositivos móveis — porém não é um aplicativo nativo.
 
-## Instalação (rápido)
+## Instalação
 - Android / Chrome: abra o site e selecione "Adicionar à tela inicial" no menu do Chrome.
 - iOS / Safari: abra o site, toque em compartilhar → "Adicionar à tela de início".
-- Observação: para aparecer a opção de instalação, o navegador precisa suportar manifest.json e service workers.
+Observação: para aparecer a opção de instalação, o navegador precisa suportar manifest.json e service workers.
 
 ## Funcionalidades
 - **Busca Híbrida:** Pesquise pelo código numérico (ex: `512`) ou por palavras-chave (ex: `Matemática`).
@@ -45,19 +48,14 @@ Arquivos importantes: `manifest.json`, `service-worker.js`, `dados.js`
 ## Dados e Licenças
 
 ### O Software
-O código-fonte deste aplicativo (HTML, CSS, lógica JavaScript e algoritmos de busca) é distribuído sob a licença **MIT**. Sinta-se livre para usar a estrutura do app em seus próprios projetos.
+O código-fonte deste aplicativo (HTML, CSS, lógica JavaScript e algoritmos de busca) é distribuído sob a licença **MIT**. 
+Sinta-se livre para usar a estrutura do app em seus próprios projetos.
 
 ### Os Dados (CDD / DDC)
 As descrições das classes e categorias contidas no arquivo `dados.js` baseiam-se na **Classificação Decimal de Dewey (DDC)**, que é propriedade intelectual da **OCLC (Online Computer Library Center)**.  
 - Atenção: os dados da DDC podem estar sujeitos a restrições de uso e licenciamento pela OCLC. Se você pretende usar este projeto em contexto comercial ou distribuir os dados, recomenda-se:
   - Adquirir a licença apropriada da OCLC para a DDC; ou
   - Substituir o arquivo `dados.js` por uma base de dados de classificação alternativa cujos termos de uso permitam o seu uso desejado.
-
-## Observações e melhorias sugeridas
-- Completar documentação de navegadores testados e versão mínima recomendada.
-- Incluir screenshots rápidos e instruções visuais de instalação.
-- Corrigir problemas de encoding no README original (havia texto truncado/bytes inválidos).
-- Adicionar uma nota sobre como atualizar/invalidar o cache quando houver mudanças em `dados.js`.
 
 ## Contribuição
 Contribuições são bem-vindas! Abra issues ou PRs para correções, melhorias e novas features.
