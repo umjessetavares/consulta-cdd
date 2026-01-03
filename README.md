@@ -28,7 +28,12 @@ Este projeto foi criado para facilitar a vida de bibliotecários, estudantes e o
 - **JavaScript:** Lógica de busca e renderização sem frameworks pesados.
 - **JSON:** Base de dados simples e desacoplada em arquivo separado.
 
-## Licença
-O código fonte deste projeto é distribuído sob a licença **MIT**.
+## Licença e Direitos Autorais
 
-*Nota: Os dados da Classificação Decimal de Dewey (CDD) são propriedade intelectual da OCLC e são utilizados aqui para fins de consulta e referência.*
+### O Software
+O código-fonte deste aplicativo (HTML, CSS, Lógica JavaScript e Algoritmos de busca) é distribuído sob a licença **MIT**. Sinta-se livre para usar a estrutura do app em seus próprios projetos.
+
+### Os Dados (CDD)
+As descrições das classes e categorias contidas no arquivo `dados.js` baseiam-se na **Classificação Decimal de Dewey (DDC)**, que é propriedade intelectual da **OCLC (Online Computer Library Center)**. Este projeto utiliza os dados dos "Sumários da DDC" para fins de **estudo, catalogação pessoal e referência educacional**.
+
+> **Atenção:** Se você pretende fazer um fork deste projeto para uso comercial, recomenda-se adquirir uma licença oficial da OCLC ou substituir o arquivo de dados por outra classificação de domínio público.
