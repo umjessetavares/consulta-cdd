@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Platform](https://img.shields.io/badge/Plataforma-Web%20%7C%20Android-orange)
 
-## 🔗 Acesse Agora
+## Acesse Agora
 **[Clique aqui para usar o App](https://tr.ee/consulta)**
 
 ---
