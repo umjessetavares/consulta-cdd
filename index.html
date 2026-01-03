@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#2563eb">
-    <title>Busca CDD Pro</title>
+    <title>Consulta CDD </title>
     
     <link rel="manifest" href="manifest.json">
 
@@ -182,7 +182,7 @@
     <p class="subtitle">Digite o código (ex: 512) ou assunto (ex: Direito)</p>
     
     <div class="search-wrapper">
-        <input type="text" id="searchInput" placeholder="Buscar no acervo..." autocomplete="off" autofocus>
+        <input type="text" id="searchInput" placeholder="Buscar na base de dados..." autocomplete="off" autofocus>
         <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
     </div>
 
@@ -265,7 +265,7 @@
 
     function clearSearch() {
         input.value = '';
-        resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!.</div>';
+        resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
         input.focus();
     }
 
