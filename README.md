@@ -3,7 +3,7 @@
 > Uma ferramenta web progressiva (PWA) leve, offline e rápida para consulta de códigos de classificação biblioteconômica.
 
 ![Status](https://img.shields.io/badge/Status-Funcional-green)
-![License](https://img.shields.io/badge/License-MIT-blue)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Platform](https://img.shields.io/badge/Plataforma-Web%20%7C%20Android-orange)
 
 ## 🔗 Acesse Agora
@@ -34,3 +34,7 @@ Se você quiser baixar e rodar no seu computador:
 1. Clone o repositório:
    ```bash
    git clone [https://github.com/SEU-USUARIO/NOME-DO-REPOSITORIO.git](https://github.com/SEU-USUARIO/NOME-DO-REPOSITORIO.git)
+
+## 📝 Licença
+O código fonte deste projeto é distribuído sob a licença **MIT**.
+*Nota: Os dados da Classificação Decimal de Dewey (CDD) são propriedade intelectual da OCLC e são utilizados aqui para fins de consulta e referência.*
