@@ -30,13 +30,19 @@ O **Busca CDD** é uma ferramenta básica para bibliotecários e estudantes que 
 - **Feedback Visual:** Cores dinâmicas para as classes e mensagens de erro tratadas.
 
 ## Tecnologias e Estrutura
-- **HTML5 & CSS3:** Uso de variáveis CSS (`:root`) para temas dinâmicos.
-- **JavaScript (ES6+):** Lógica modular e segura.
-- **Arquitetura:**
-  - `index.html`: Estrutura e CSP.
-  - `app.js`: Lógica de busca, eventos e controle de tema.
-  - `dados.js`: Base de dados CDD desacoplada.
-  - `service-worker.js`: Cache e funcionamento offline.
+
+- **HTML5:** Estrutura semântica, acessível e otimizada.
+- **CSS3:** Estilização modular em arquivo separado (`style.css`), utilizando variáveis (`:root`) para gerenciamento do Modo Escuro.
+- **JavaScript (ES6+):** Lógica segura e sem dependências externas.
+- **PWA:** Configurado para instalação nativa e uso offline.
+
+### Arquitetura
+- `index.html`: Estrutura base e políticas de segurança (CSP).
+- `style.css`: Folha de estilos visual (separada do HTML).
+- `app.js`: Lógica de busca, manipulação de DOM e controle de tema.
+- `dados.js`: Base de dados CDD desacoplada.
+- `service-worker.js`: Gerenciamento de cache e funcionamento offline.
+- `manifest.json`: Metadados para instalação em dispositivos móveis e desktop.
 
 ## Instalação (PWA)
 1. **Android / Chrome:** Acesse o site e toque em "Adicionar à tela inicial".
