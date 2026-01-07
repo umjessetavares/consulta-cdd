@@ -6,16 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <meta name="referrer" content="no-referrer">
-    <meta name="description" content="Consulta rápida e offline da Classificação Decimal de Dewey (CDD).">
+    <meta name="description" content="Consulta rápida e offline da Classificação Decimal de Dewey (CDD) e CDU.">
     <meta name="robots" content="index, follow">
     
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://umjessetavares.github.io/consulta-cdd/"> 
-    <meta property="og:title" content="Consulta CDD - Rápido e Offline">
-    <meta property="og:description" content="Ferramenta para bibliotecários e estudantes. Consulte a Classificação Decimal de Dewey instantaneamente.">
+    <meta property="og:title" content="Consulta CDD/CDU - Rápido e Offline">
+    <meta property="og:description" content="Ferramenta para bibliotecários. Consulte CDD e CDU instantaneamente.">
     <meta property="og:image" content="icon-512.png">
     
-    <title>Consulta CDD</title>
+    <title>Consulta CDD/CDU</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
@@ -25,19 +25,33 @@
 <body>
 <div class="container">
     <button id="themeBtn" class="theme-btn" aria-label="Alternar tema">🌙</button>
-    <h1>Busca de códigos CDD</h1>
-    <p class="subtitle">Digite o código (ex: 512) ou assunto (ex: Direito)</p>
+    
+    <h1>Busca de códigos CDD/CDU</h1>
+    <p class="subtitle">Selecione a base e digite o código ou assunto</p>
+
+    <div class="db-selector">
+        <label class="radio-label">
+            <input type="radio" name="database" value="cdd" checked>
+            <span>CDD</span>
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="database" value="cdu">
+            <span>CDU</span>
+        </label>
+    </div>
+
     <div class="search-wrapper">
         <input 
             type="text" 
             id="searchInput" 
-            placeholder="Buscar na base de dados..." 
+            placeholder="Buscar na CDD..." 
             autocomplete="off" 
-            aria-label="Buscar CDD"
+            aria-label="Buscar código"
             maxlength="50"
         >
         <button id="clearBtn" class="clear-btn" aria-label="Limpar busca">✕</button>
     </div>
+
     <div id="resultsArea" class="results">
         <div class="empty-state">Faça sua consulta!</div>
     </div>
