@@ -5,7 +5,7 @@ const urlsToCache = [
   './app.js',
   './dados.js',
   './manifest.json'
-  // Adicione aqui o caminho do ícone se tiver (ex: './icon-192.png')
+  './icon-192.png'
 ];
 
 // Instalação: Cache inicial dos arquivos essenciais
@@ -20,7 +20,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Ativação: Limpeza de caches antigos (útil quando você muda a versão)
+// Ativação: Limpeza de caches antigos
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -36,7 +36,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interceptação de requisições: Busca no Cache primeiro, depois na Rede
+// Interceptação de requisições: Busca no cache primeiro, depois na rede
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
