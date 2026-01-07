@@ -9,13 +9,14 @@ const urlsToCache = [
 ];
 
 // Instalação: Cache inicial dos arquivos essenciais
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Arquivos em cache');
-        return cache.addAll(urlsToCache);
-      })
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      return cached || fetch(event.request);
+    })
   );
 });
 
