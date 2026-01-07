@@ -195,3 +195,32 @@ mark { background-color: #fde047; color: #000; padding: 0 2px; border-radius: 2p
         line-height: 1.2;
     }
 }
+/* Barra de rolagem personalizada (Webkit - Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+    background-color: var(--subtext);
+    border-radius: 4px;
+}
+
+/* Foco acessível melhorado */
+button:focus-visible, input:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+/* Esconder elementos desnecessários na hora de imprimir */
+@media print {
+    .search-wrapper, .theme-btn, p.subtitle {
+        display: none;
+    }
+    .container {
+        box-shadow: none;
+        max-width: 100%;
+    }
+}
+
