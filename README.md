@@ -1,7 +1,5 @@
 # Busca CDD (Classificação Decimal de Dewey)
 
-> Uma ferramenta web progressiva (PWA) segura, offline e com suporte a modo escuro para consulta de códigos de classificação.
-
 ![Status](https://img.shields.io/badge/Status-Funcional-green)
 ![Licença](https://img.shields.io/badge/License-MIT-yellow)
 ![Plataforma](https://img.shields.io/badge/Plataforma-Web%20(PWA)-orange)
