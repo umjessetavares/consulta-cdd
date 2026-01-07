@@ -2,25 +2,24 @@ const CACHE_NAME = 'cdd-cache-v1';
 const urlsToCache = [
   './',
   './index.html',
+  './style.css',  
   './app.js',
   './dados.js',
-  './manifest.json'
+  './manifest.json',
   './icon-192.png'
 ];
 
-// Instalação: Cache inicial dos arquivos essenciais
-
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request);
-    })
+// Instalação
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-// Ativação: Limpeza de caches antigos
+// Ativação e Limpeza
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -36,17 +35,12 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interceptação de requisições: Busca no cache primeiro, depois na rede
+// Interceptação (Cache First)
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Se encontrou no cache, retorna o cache
-        if (response) {
-          return response;
-        }
-        // Se não, busca na rede
-        return fetch(event.request);
+        return response || fetch(event.request);
       })
   );
 });
