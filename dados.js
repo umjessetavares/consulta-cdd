@@ -9,7 +9,8 @@
  * pela licença MIT do restante do projeto.
  * * Fonte de referência: OCLC Dewey Summaries.
  */
-const dados = [
+/* --- BASE CDD (Dewey) --- */
+const baseCDD =
     { code: "000", desc: "Generalidades e Ciência da Computação" },
     { code: "001", desc: "Conhecimento e Teoria" },
     { code: "001.4", desc: "Métodos de estudo, Metodologia e Pesquisa" },
@@ -342,4 +343,18 @@ const dados = [
     { code: "997", desc: "Ilhas do oceano Atlântico" },
     { code: "998", desc: "Ilhas do Ártico e Antártica" },
     { code: "999", desc: "Mundos extraterrestres" }
+];
+/* --- BASE CDU (Universal) - Exemplo inicial --- */
+const baseCDU = [
+    { "code": "0", "desc": "Generalidades. Ciência e conhecimento" },
+    { "code": "004", "desc": "Ciência e tecnologia dos computadores" },
+    { "code": "1", "desc": "Filosofia. Psicologia" },
+    { "code": "2", "desc": "Religião. Teologia" },
+    { "code": "3", "desc": "Ciências sociais" },
+    { "code": "34", "desc": "Direito. Jurisprudência" },
+    { "code": "34(81)", "desc": "Direito no Brasil" },
+    { "code": "5", "desc": "Matemática. Ciências naturais" },
+    { "code": "6", "desc": "Ciências aplicadas. Medicina. Tecnologia" },
+    { "code": "8", "desc": "Linguagem. Linguística. Literatura" },
+    { "code": "9", "desc": "Geografia. Biografia. História" }
 ];
