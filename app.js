@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanValue = rawValue.trim();
 
         if (cleanValue.length === 0) {
-            resultsArea.innerHTML = '<div class="empty-state">Acervo CDD.</div>';
+            resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
             return;
         }
 
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function clearSearch() {
         input.value = '';
-        resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
+        resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>'; 
         input.focus();
         clearBtn.style.display = 'none';
     }
