@@ -1,10 +1,10 @@
-const CACHE_NAME = 'cdd-cache-v6';
+const CACHE_NAME = 'cdd-cache-v9';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',  
   './app.js',
-  './dados.json',   
+  './dados.js',      
   './manifest.json',
   './icon-192.png'  
 ];
