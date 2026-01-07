@@ -1,25 +1,21 @@
-const CACHE_NAME = 'cdd-cache-v5';
+const CACHE_NAME = 'cdd-cache-v6';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',  
   './app.js',
-  './dados.js',
+  './dados.json',   
   './manifest.json',
-  './icon-192.png'
+  './icon-192.png'  
 ];
 
-// Instalação
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.addAll(urlsToCache);
-      })
+      .then((cache) => cache.addAll(urlsToCache))
   );
 });
 
-// Ativação e Limpeza
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -35,12 +31,9 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interceptação (Cache First)
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
-      .then((response) => {
-        return response || fetch(event.request);
-      })
+      .then((response) => response || fetch(event.request))
   );
 });
