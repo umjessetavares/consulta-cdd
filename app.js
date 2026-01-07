@@ -1,19 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- ELEMENTOS DO DOM ---
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
     const clearBtn = document.getElementById('clearBtn');
     const themeBtn = document.getElementById('themeBtn');
+    
+    // Variável que receberá o JSON
+    let dados = []; 
     let debounceTimer;
 
-    // --- 1. VERIFICAÇÃO DE DADOS ---
-    if (typeof dados === 'undefined') {
-        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: dados.js não carregado.</div>';
-        return;
-    }
+    // --- 1 CARREGAR DADOS (JSON) ---
+    fetch('./dados.json')
+        .then(response => {
+            if (!response.ok) throw new Error("Erro HTTP: " + response.status);
+            return response.json();
+        })
+        .then(json => {
+            dados = json;
+            console.log('Base de dados carregada via JSON.');
+        })
+        .catch(err => {
+            console.error(err);
+            resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro ao carregar dados.json</div>';
+        });
 
-    // --- 2. CONTROLE DE DIGITAÇÃO ---
+    // --- 2 CONTROLE DE DIGITAÇÃO ---
     function handleInput() {
         const query = searchInput.value.trim();
         clearBtn.style.display = query.length > 0 ? 'block' : 'none';
@@ -22,8 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
         debounceTimer = setTimeout(() => performSearch(query), 300); 
     }
 
-    // --- 3. LÓGICA DE BUSCA ---
+    // --- 3 LÓGICA DE BUSCA ---
     function performSearch(query) {
+        // Se o JSON ainda não carregou, para aqui
+        if (!dados || dados.length === 0) return;
+
         const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
         if (query.length === 0) {
@@ -40,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayResults(results, normalizedQuery);
     }
 
-    // --- 4. EXIBIR RESULTADOS ---
+    // --- 4 EXIBIR RESULTADOS ---
     function displayResults(results, normalizedQuery) {
         resultsArea.innerHTML = ''; 
 
@@ -67,13 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const content = document.createElement('div');
             content.className = 'level-content';
 
-            // --- BREADCRUMB (HIERARQUIA) CORRIGIDO ---
-            // Mostra o caminho (ex: 000 > 001 > 001.9...)
+            // --- HIERARQUIA (BREADCRUMB) ---
             const hierarchy = getBreadcrumb(item.code);
             if (hierarchy) {
                 const breadcrumbSpan = document.createElement('span');
                 breadcrumbSpan.className = 'breadcrumb';
-                breadcrumbSpan.innerHTML = hierarchy; // Insere o caminho formatado
+                breadcrumbSpan.innerHTML = hierarchy;
                 content.appendChild(breadcrumbSpan);
             }
 
@@ -97,109 +110,41 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsArea.appendChild(fragment);
     }
 
-    // --- FUNÇÃO DE HIERARQUIA REVISADA ---
+    // --- FUNÇÃO DE HIERARQUIA (Baseada no JSON) ---
     function getBreadcrumb(currentCode) {
         if (!currentCode) return '';
         const parents = new Set();
         const c = currentCode;
 
-        // 1. Classe Principal (Centena): ex "500" para "512"
-        if (c.length >= 3) {
-            parents.add(c.charAt(0) + "00");
-        }
-
-        // 2. Divisão (Dezena): ex "510" para "512"
-        if (c.length >= 3 && c.charAt(1) !== '0') {
-            parents.add(c.substring(0, 2) + "0");
-        }
-
-        // 3. Seção (Unidade): ex "512" (se tiver decimais depois)
-        if (c.includes('.')) {
-            parents.add(c.split('.')[0]); // Pega tudo antes do ponto
-        }
-
-        // 4. Decimais Intermediários: ex "001.9" para "001.94"
+        // Regras para encontrar os "pais"
+        if (c.length >= 3) parents.add(c.charAt(0) + "00"); // Classe (500)
+        if (c.length >= 3 && c.charAt(1) !== '0') parents.add(c.substring(0, 2) + "0"); // Divisão (510)
+        if (c.includes('.')) parents.add(c.split('.')[0]); // Seção inteira (512)
+        
+        // Decimais intermediários (ex: 001.9 -> 001.94)
         if (c.includes('.')) {
             let parts = c.split('.');
             let prefix = parts[0] + '.';
             let decimals = parts[1];
-            // Vai montando casa por casa (001.9, 001.94...)
             for (let i = 1; i < decimals.length; i++) {
                 parents.add(prefix + decimals.substring(0, i));
             }
         }
 
-        // Remove o próprio código da lista de pais
-        parents.delete(currentCode);
+        parents.delete(currentCode); // Remove o próprio item
 
-        // Transforma os códigos encontrados em texto
-        // Só exibe se o código "pai" existir no arquivo dados.js
+        // Busca os pais dentro da variável 'dados' (que veio do JSON)
         const trail = Array.from(parents)
             .sort()
             .map(parentCode => {
                 const found = dados.find(d => d.code === parentCode);
-                // Retorna apenas o código e a primeira palavra para economizar espaço
                 return found ? `${found.code} ${found.desc.split(' ')[0]}...` : null; 
             })
-            .filter(item => item !== null); // Remove os nulos (pais não encontrados na base)
+            .filter(item => item !== null);
 
         if (trail.length === 0) return '';
-        
-        // Retorna com setinha (>)
         return trail.join(' &rsaquo; ');
     }
 
     function highlightTerm(text, query) {
         if (!query) return text;
-        const regex = new RegExp(`(${query})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
-    }
-
-    // --- EVENTOS ---
-    searchInput.addEventListener('input', handleInput);
-    
-    clearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        searchInput.focus();
-        handleInput();
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            searchInput.value = '';
-            searchInput.focus();
-            handleInput();
-        }
-        if (e.key === '/' && document.activeElement !== searchInput) {
-            e.preventDefault();
-            searchInput.focus();
-        }
-    });
-
-    // --- MODO ESCURO ---
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        if(themeBtn) themeBtn.textContent = '☀️';
-    }
-
-    if(themeBtn) {
-        themeBtn.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            if (currentTheme === 'dark') {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                themeBtn.textContent = '🌙';
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                themeBtn.textContent = '☀️';
-            }
-        });
-    }
-
-    // --- PWA ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
-    }
-});
