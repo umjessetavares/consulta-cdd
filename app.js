@@ -24,7 +24,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clearBtn');
     const resultsArea = document.getElementById('resultsArea');
     let timeoutId;
+    // -----------------------------
+    // Lógica do Modo Escuro
+    // -----------------------------
+    const themeBtn = document.getElementById('themeBtn');
+    
+    // Verifica se já tem tema salvo
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        if(themeBtn) themeBtn.textContent = '☀️';
+    }
 
+    if(themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            
+            if (currentTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                themeBtn.textContent = '🌙';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeBtn.textContent = '☀️';
+            }
+        });
+    }
     // Se dados não carregaram, bloqueia interação e mostra erro (evita exceções)
     if (typeof cddDatabase === 'undefined') {
         resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: O arquivo dados.js não foi carregado.</div>';
