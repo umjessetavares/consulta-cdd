@@ -5,40 +5,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsArea = document.getElementById('resultsArea');
     const clearBtn = document.getElementById('clearBtn');
     const themeBtn = document.getElementById('themeBtn');
-    
-    // Variável que guardará os dados baixados do JSON
-    let dados = []; 
     let debounceTimer;
 
-    // --- 0. CARREGAMENTO DOS DADOS (JSON) ---
-    fetch('./dados.json')
-        .then(response => {
-            if (!response.ok) throw new Error("Erro ao carregar JSON");
-            return response.json();
-        })
-        .then(json => {
-            dados = json;
-            console.log('Base de dados CDD carregada com sucesso.');
-        })
-        .catch(erro => {
-            console.error(erro);
-            resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro ao carregar dados. Recarregue a página.</div>';
-        });
+    // --- 1. VERIFICAÇÃO DE DADOS ---
+    if (typeof dados === 'undefined') {
+        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: dados.js não carregado.</div>';
+        return;
+    }
 
-    // --- 1. CONTROLE DE DIGITAÇÃO ---
+    // --- 2. CONTROLE DE DIGITAÇÃO ---
     function handleInput() {
         const query = searchInput.value.trim();
         clearBtn.style.display = query.length > 0 ? 'block' : 'none';
         
         clearTimeout(debounceTimer);
-        // Espera 300ms antes de buscar
         debounceTimer = setTimeout(() => performSearch(query), 300); 
     }
 
-    // --- 2. LÓGICA DE BUSCA ---
+    // --- 3. LÓGICA DE BUSCA ---
     function performSearch(query) {
-        if (!dados || dados.length === 0) return; // Proteção caso JSON não tenha carregado
-
         const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
         if (query.length === 0) {
@@ -55,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayResults(results, normalizedQuery);
     }
 
-    // --- 3. EXIBIR RESULTADOS (COM HIERARQUIA) ---
+    // --- 4. EXIBIR RESULTADOS ---
     function displayResults(results, normalizedQuery) {
         resultsArea.innerHTML = ''; 
 
@@ -75,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = `level-card class-${mainClass}`;
 
-            // Tag da Classe
             const tag = document.createElement('span');
             tag.className = 'level-tag';
             tag.textContent = `Classe ${mainClass}00`;
@@ -83,44 +67,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const content = document.createElement('div');
             content.className = 'level-content';
 
-            // --- BREADCRUMB (Hierarquia) ---
+            // --- BREADCRUMB (HIERARQUIA) CORRIGIDO ---
+            // Mostra o caminho (ex: 000 > 001 > 001.9...)
             const hierarchy = getBreadcrumb(item.code);
             if (hierarchy) {
                 const breadcrumbSpan = document.createElement('span');
                 breadcrumbSpan.className = 'breadcrumb';
-                breadcrumbSpan.innerHTML = hierarchy;
+                breadcrumbSpan.innerHTML = hierarchy; // Insere o caminho formatado
                 content.appendChild(breadcrumbSpan);
             }
 
-            // Cabeçalho (Código + Botão Copiar)
-            const codeHeader = document.createElement('div');
-            codeHeader.style.display = 'flex';
-            codeHeader.style.justifyContent = 'space-between';
-            codeHeader.style.alignItems = 'center';
-
+            // Código
             const codeSpan = document.createElement('span');
             codeSpan.className = 'level-code';
             codeSpan.textContent = item.code;
 
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn';
-            copyBtn.innerHTML = '📋';
-            copyBtn.title = 'Copiar código';
-            copyBtn.onclick = () => {
-                navigator.clipboard.writeText(item.code);
-                copyBtn.innerHTML = '✅';
-                setTimeout(() => copyBtn.innerHTML = '📋', 1500);
-            };
-
-            codeHeader.appendChild(codeSpan);
-            codeHeader.appendChild(copyBtn);
-
-            // Descrição com Highlight
+            // Descrição
             const descSpan = document.createElement('span');
             descSpan.className = 'level-desc';
             descSpan.innerHTML = highlightTerm(item.desc, normalizedQuery);
 
-            content.appendChild(codeHeader);
+            content.appendChild(codeSpan);
             content.appendChild(descSpan);
             card.appendChild(tag);
             card.appendChild(content);
@@ -130,37 +97,55 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsArea.appendChild(fragment);
     }
 
-    // --- FUNÇÃO AUXILIAR: Monta a trilha (000 > 001...) ---
+    // --- FUNÇÃO DE HIERARQUIA REVISADA ---
     function getBreadcrumb(currentCode) {
         if (!currentCode) return '';
         const parents = new Set();
-        
-        // Regra 1: Classe Principal (ex: 500)
-        if (currentCode.length >= 3) parents.add(currentCode.charAt(0) + "00");
-        
-        // Regra 2: Divisão Inteira (ex: 512)
-        if (currentCode.length > 3) parents.add(currentCode.substring(0, 3));
+        const c = currentCode;
 
-        // Regra 3: Decimais (ex: 001.9 para 001.94)
-        if (currentCode.includes('.')) {
-            let parts = currentCode.split('.');
+        // 1. Classe Principal (Centena): ex "500" para "512"
+        if (c.length >= 3) {
+            parents.add(c.charAt(0) + "00");
+        }
+
+        // 2. Divisão (Dezena): ex "510" para "512"
+        if (c.length >= 3 && c.charAt(1) !== '0') {
+            parents.add(c.substring(0, 2) + "0");
+        }
+
+        // 3. Seção (Unidade): ex "512" (se tiver decimais depois)
+        if (c.includes('.')) {
+            parents.add(c.split('.')[0]); // Pega tudo antes do ponto
+        }
+
+        // 4. Decimais Intermediários: ex "001.9" para "001.94"
+        if (c.includes('.')) {
+            let parts = c.split('.');
             let prefix = parts[0] + '.';
             let decimals = parts[1];
+            // Vai montando casa por casa (001.9, 001.94...)
             for (let i = 1; i < decimals.length; i++) {
                 parents.add(prefix + decimals.substring(0, i));
             }
         }
 
-        parents.delete(currentCode); // Remove a si mesmo
+        // Remove o próprio código da lista de pais
+        parents.delete(currentCode);
 
-        // Busca no JSON carregado
-        const trail = Array.from(parents).sort().map(c => {
-            const found = dados.find(d => d.code === c);
-            // Pega só a primeira palavra da descrição para não ficar gigante
-            return found ? `${found.code} ${found.desc.split(' ')[0]}...` : null; 
-        }).filter(item => item !== null);
+        // Transforma os códigos encontrados em texto
+        // Só exibe se o código "pai" existir no arquivo dados.js
+        const trail = Array.from(parents)
+            .sort()
+            .map(parentCode => {
+                const found = dados.find(d => d.code === parentCode);
+                // Retorna apenas o código e a primeira palavra para economizar espaço
+                return found ? `${found.code} ${found.desc.split(' ')[0]}...` : null; 
+            })
+            .filter(item => item !== null); // Remove os nulos (pais não encontrados na base)
 
         if (trail.length === 0) return '';
+        
+        // Retorna com setinha (>)
         return trail.join(' &rsaquo; ');
     }
 
