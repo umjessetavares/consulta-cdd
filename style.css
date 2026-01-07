@@ -225,7 +225,6 @@ button:focus-visible, input:focus-visible {
 }
 
 .breadcrumb {
-    /* Mantenha as propriedades que já existem (color, font-size, etc) */
     display: block;
     font-size: 0.75rem;
     color: var(--subtext);
@@ -241,4 +240,50 @@ button:focus-visible, input:focus-visible {
 .breadcrumb:hover {
     color: var(--text); /* Fica mais escuro ao passar o mouse */
     text-decoration: underline;
+}
+/* --- Seletor de Base (CDD / CDU) --- */
+.db-selector {
+    display: flex;
+    justify-content: center;
+    gap: 2rem; /* Espaço entre os botões */
+    margin-bottom: 1.5rem;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.radio-label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--subtext);
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.2s;
+    background-color: var(--bg);
+    border: 1px solid transparent;
+}
+
+/* Efeito ao passar o mouse */
+.radio-label:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* Quando selecionado (A mágica do CSS para destacar o texto) */
+input[type="radio"]:checked + span {
+    color: #2563eb; /* Azul */
+    font-weight: 800;
+}
+
+/* No modo escuro */
+[data-theme="dark"] input[type="radio"]:checked + span {
+    color: #60a5fa; /* Azul mais claro */
+}
+
+input[type="radio"] {
+    accent-color: #2563eb; 
+    transform: scale(1.2); /* Aumenta um pouco a bolinha */
+    cursor: pointer;
 }
