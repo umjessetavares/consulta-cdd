@@ -3,16 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsArea = document.getElementById('resultsArea');
     const clearBtn = document.getElementById('clearBtn');
     const themeBtn = document.getElementById('themeBtn');
-    let dados = []; 
     let debounceTimer;
 
-    // --- 1. CARREGAR DADOS (JSON) ---
-    fetch('./dados.json')
-        .then(response => response.json())
-        .then(json => { dados = json; })
-        .catch(() => {
-            resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: dados.json não encontrado ou inválido.</div>';
-        });
+    // --- 1. VERIFICAÇÃO ---
+    // Se o arquivo dados.js não carregar, avisa o usuário
+    if (typeof dados === 'undefined') {
+        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Arquivo dados.js não carregado.</div>';
+        return;
+    }
 
     // --- 2. CONTROLE DE DIGITAÇÃO ---
     function handleInput() {
@@ -24,17 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3. LÓGICA DE BUSCA ---
     function performSearch(query) {
-        if (!dados.length) return;
         const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
         if (query.length === 0) {
             resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
             return;
         }
+
         const results = dados.filter(item => {
             const code = item.code.toLowerCase();
             const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
         });
+        
         displayResults(results, normalizedQuery);
     }
 
@@ -51,10 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = `level-card class-${mainClass}`;
             
-            // Breadcrumb
+            // Hierarquia
             const hierarchy = getBreadcrumb(item.code);
             let breadcrumbHtml = hierarchy ? `<span class="breadcrumb">${hierarchy}</span>` : '';
-
+            
             // Highlight
             const regex = new RegExp(`(${q})`, 'gi');
             const highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>');
@@ -74,9 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 5. HIERARQUIA ---
     function getBreadcrumb(code) {
-        if (!code || !dados.length) return '';
+        if (!code) return '';
         const parents = new Set();
-        // Lógica de pais: 500 -> 510 -> 512 -> 512.x
         if (code.length >= 3) parents.add(code.charAt(0) + "00");
         if (code.length >= 3 && code.charAt(1) !== '0') parents.add(code.substring(0, 2) + "0");
         if (code.includes('.')) {
@@ -94,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return trail.join(' &rsaquo; ');
     }
 
-    // --- EVENTOS ---
+    // Eventos
     searchInput.addEventListener('input', handleInput);
     clearBtn.addEventListener('click', () => { searchInput.value = ''; searchInput.focus(); handleInput(); });
     document.addEventListener('keydown', (e) => {
@@ -102,15 +101,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === '/' && document.activeElement !== searchInput) { e.preventDefault(); searchInput.focus(); }
     });
     
-    // Tema
-    const themeBtn = document.getElementById('themeBtn');
+    // Tema e PWA
     if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    themeBtn?.addEventListener('click', () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
-        localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    });
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        });
+    }
 
-    // PWA
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
 });
