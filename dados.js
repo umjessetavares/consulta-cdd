@@ -10,7 +10,7 @@
  * * Fonte de referência: OCLC Dewey Summaries.
  */
 /* --- BASE CDD (Dewey) --- */
-const baseCDD =
+const baseCDD = [
     { code: "000", desc: "Generalidades e Ciência da Computação" },
     { code: "001", desc: "Conhecimento e Teoria" },
     { code: "001.4", desc: "Métodos de estudo, Metodologia e Pesquisa" },
