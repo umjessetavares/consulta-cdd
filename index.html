@@ -27,6 +27,29 @@
         --card-bg: #1e293b; /* Fundo escuro para cartões */
     }
 
+        /* --- Ajuste para Celular (Media Query) --- */
+    @media (max-width: 480px) {
+        /* Encosta o botão mais no canto */
+        .theme-btn {
+            top: 10px;
+            right: 10px;
+            font-size: 1.2rem; /* Diminui um pouco o ícone */
+        }
+
+        /* Aumenta o espaço no topo do container para o título descer */
+        .container {
+            padding-top: 3rem; 
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        /* Ajusta o tamanho da fonte do título se precisar */
+        h1 {
+            font-size: 1.3rem;
+            margin-top: 0;
+        }
+    }
+        
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: var(--bg);
