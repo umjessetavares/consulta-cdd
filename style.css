@@ -223,4 +223,11 @@ button:focus-visible, input:focus-visible {
         max-width: 100%;
     }
 }
-
+.breadcrumb {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--subtext);
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
