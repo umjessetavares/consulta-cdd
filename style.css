@@ -223,11 +223,22 @@ button:focus-visible, input:focus-visible {
         max-width: 100%;
     }
 }
+
 .breadcrumb {
+    /* Mantenha as propriedades que já existem (color, font-size, etc) */
     display: block;
     font-size: 0.75rem;
     color: var(--subtext);
     margin-bottom: 0.4rem;
     font-weight: 500;
     opacity: 0.8;
+    
+    /* ADICIONE ISTO: */
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.breadcrumb:hover {
+    color: var(--text); /* Fica mais escuro ao passar o mouse */
+    text-decoration: underline;
 }
