@@ -6,8 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const browseList = document.getElementById('browseList');
     const browseBreadcrumb = document.getElementById('browseBreadcrumb');
     const clearBtn = document.getElementById('clearBtn');
+    // NOVO ELEMENTO
+    const historyContainer = document.getElementById('searchHistory');
 
     let currentBrowsePath = []; 
+
+    // --- CARREGAR HISTÓRICO AO INICIAR ---
+    renderHistory();
 
     // --- SINCRONIZAÇÃO ---
     document.querySelectorAll('input[name^="dbType"]').forEach(radio => {
@@ -15,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const val = e.target.value;
             const searchRadio = document.querySelector(`input[name="dbTypeSearch"][value="${val}"]`);
             const browseRadio = document.querySelector(`input[name="dbTypeBrowse"][value="${val}"]`);
-            
             if(searchRadio) searchRadio.checked = true;
             if(browseRadio) browseRadio.checked = true;
             
@@ -41,7 +45,102 @@ document.addEventListener('DOMContentLoaded', () => {
         return el ? el.value : 'cdd';
     }
 
-    // --- NAVEGAÇÃO ---
+    // --- HISTÓRICO DE BUSCA (NOVO) ---
+    function saveToHistory(term) {
+        if (!term || term.length < 3) return; // Só salva termos relevantes
+        
+        let history = JSON.parse(localStorage.getItem('searchHistory')) || [];
+        // Remove se já existir para colocar no topo
+        history = history.filter(h => h !== term);
+        // Adiciona no início
+        history.unshift(term);
+        // Mantém apenas os últimos 5
+        history = history.slice(0, 5);
+        
+        localStorage.setItem('searchHistory', JSON.stringify(history));
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const history = JSON.parse(localStorage.getItem('searchHistory')) || [];
+        historyContainer.innerHTML = '';
+        
+        if (history.length === 0) return;
+
+        const label = document.createElement('div');
+        label.style.width = '100%';
+        label.style.fontSize = '12px';
+        label.style.color = '#94a3b8';
+        label.style.marginBottom = '4px';
+        label.innerText = 'Recentes:';
+        historyContainer.appendChild(label);
+
+        history.forEach(term => {
+            const tag = document.createElement('span');
+            tag.className = 'history-tag';
+            tag.innerText = term;
+            tag.onclick = () => {
+                searchInput.value = term;
+                performSearch(term);
+            };
+            historyContainer.appendChild(tag);
+        });
+    }
+
+    // --- PROCURA ---
+    function performSearch(q) {
+        const type = getCurrentType();
+        const activeDB = (type === 'cdu') ? baseCDU : baseCDD;
+        
+        if (!q || q.trim() === '') { resultsArea.innerHTML = '<div class="empty-state">Introduza um termo.</div>'; return; }
+
+        // Salva no histórico se o usuário parou de digitar (debounce simples visual)
+        // Na prática, vamos salvar apenas quando tiver resultados relevantes
+        
+        const normalizedQuery = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const stopWords = ['de', 'do', 'da', 'e', 'a', 'o', 'em', 'para', 'com', 'no', 'na', 'dos', 'das'];
+        const terms = normalizedQuery.split(' ').filter(t => t.length > 0 && !stopWords.includes(t));
+
+        if (terms.length === 0) { resultsArea.innerHTML = '<div class="empty-state">Seja mais específico.</div>'; return; }
+
+        let found = activeDB.filter(i => {
+            const cleanDesc = i.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const cleanCode = i.code.toLowerCase();
+            return terms.every(term => cleanCode.includes(term) || cleanDesc.includes(term));
+        }).map(i => ({ ...i, path: getParents(i.code, activeDB, type) }));
+
+        found.sort((a, b) => {
+            const aCodeMatch = a.code.toLowerCase() === normalizedQuery;
+            const bCodeMatch = b.code.toLowerCase() === normalizedQuery;
+            if (aCodeMatch && !bCodeMatch) return -1;
+            if (!aCodeMatch && bCodeMatch) return 1;
+            return a.code.length - b.code.length;
+        });
+
+        renderResultsUI(found, terms, type.toUpperCase());
+    }
+
+    function renderResultsUI(results, terms, label) {
+        resultsArea.innerHTML = results.length ? '' : '<div class="empty-state">Nada encontrado.</div>';
+        const highlightRegex = new RegExp(`(${terms.join('|')})`, 'gi');
+
+        results.slice(0, 50).forEach(item => {
+            const color = item.code.replace(/[^0-9]/g, '').charAt(0) || '0';
+            const card = document.createElement('div'); 
+            card.className = `level-card class-${color}`;
+            
+            // Ao clicar num resultado, salva a busca no histórico!
+            card.onclick = () => saveToHistory(document.getElementById('searchInput').value);
+
+            const pathHTML = item.path && item.path.length ? `<div class="breadcrumb">📂 ${item.path.map(p => `<b>${p.code}</b> ${p.desc}`).join(' › ')}</div>` : '';
+            const highlightedDesc = item.desc.replace(highlightRegex, '<mark>$1</mark>');
+
+            card.innerHTML = `${pathHTML}<div class="level-tag">${label}</div><div class="level-code">${item.code}</div><div class="level-desc">${highlightedDesc}</div>`;
+            resultsArea.appendChild(card);
+        });
+    }
+
+    // ... (Resto do código de Navegação e Parents igual ao anterior) ...
     function renderBrowse() {
         const type = getCurrentType();
         const activeDB = (type === 'cdu') ? baseCDU : baseCDD;
@@ -69,21 +168,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderBrowseUI(items, activeDB, type) {
         browseBreadcrumb.innerHTML = '';
-        const home = document.createElement('span'); 
-        home.className = 'crumb'; 
-        home.innerText = '🏠 Início';
+        const home = document.createElement('span'); home.className = 'crumb'; home.innerText = '🏠 Início';
         home.onclick = () => { currentBrowsePath = []; renderBrowse(); };
         browseBreadcrumb.appendChild(home);
-
         currentBrowsePath.forEach((step, i) => {
             browseBreadcrumb.appendChild(document.createTextNode(' › '));
-            const span = document.createElement('span'); 
-            span.className = 'crumb'; 
+            const span = document.createElement('span'); span.className = 'crumb'; 
             span.innerText = `${step.code} ${step.desc}`; 
             span.onclick = () => { currentBrowsePath = currentBrowsePath.slice(0, i + 1); renderBrowse(); };
             browseBreadcrumb.appendChild(span);
         });
-
         browseList.innerHTML = items.length ? '' : '<div class="empty-state">Fim da hierarquia.</div>';
         items.forEach(item => {
             const hasKids = findChildren(item.code, activeDB, type).length > 0;
@@ -94,30 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 else { switchView('search'); searchInput.value = item.code; performSearch(item.code); }
             };
             browseList.appendChild(div);
-        });
-    }
-
-    // --- PROCURA ---
-    function performSearch(q) {
-        const type = getCurrentType();
-        const activeDB = (type === 'cdu') ? baseCDU : baseCDD;
-        const query = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if (!q) { resultsArea.innerHTML = '<div class="empty-state">Introduza um termo.</div>'; return; }
-        const found = activeDB.filter(i => {
-            const cleanDesc = i.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            return i.code.toLowerCase().includes(query) || cleanDesc.includes(query);
-        }).map(i => ({ ...i, path: getParents(i.code, activeDB, type) }));
-        renderResultsUI(found, query, type.toUpperCase());
-    }
-
-    function renderResultsUI(results, q, label) {
-        resultsArea.innerHTML = results.length ? '' : '<div class="empty-state">Nada encontrado.</div>';
-        results.slice(0, 50).forEach(item => {
-            const color = item.code.replace(/[^0-9]/g, '').charAt(0) || '0';
-            const card = document.createElement('div'); card.className = `level-card class-${color}`;
-            const pathHTML = item.path && item.path.length ? `<div class="breadcrumb">📂 ${item.path.map(p => `<b>${p.code}</b> ${p.desc}`).join(' › ')}</div>` : '';
-            card.innerHTML = `${pathHTML}<div class="level-tag">${label}</div><div class="level-code">${item.code}</div><div class="level-desc">${item.desc.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>')}</div>`;
-            resultsArea.appendChild(card);
         });
     }
 
@@ -136,29 +206,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...new Set(parents)].sort((a,b) => a.code.length - b.code.length);
     }
 
-    // --- EVENTOS DE INPUT E ESC ---
     searchInput.oninput = (e) => { 
         clearBtn.style.display = e.target.value ? 'block' : 'none'; 
         performSearch(e.target.value); 
     };
 
-    // AQUI ESTÁ A NOVA FUNÇÃO ESC
     searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            searchInput.value = '';
-            performSearch('');
-            clearBtn.style.display = 'none';
-            searchInput.focus();
-        }
+        if (e.key === 'Enter') saveToHistory(searchInput.value); // Salva ao dar Enter
+        if (e.key === 'Escape') { e.preventDefault(); searchInput.value = ''; performSearch(''); clearBtn.style.display = 'none'; searchInput.focus(); }
     });
 
-    clearBtn.onclick = () => { 
-        searchInput.value = ''; 
-        performSearch(''); 
-        searchInput.focus(); 
-        clearBtn.style.display = 'none'; 
-    };
+    clearBtn.onclick = () => { searchInput.value = ''; performSearch(''); searchInput.focus(); clearBtn.style.display = 'none'; };
     
     const themeBtn = document.getElementById('themeBtn');
     themeBtn.onclick = () => {
