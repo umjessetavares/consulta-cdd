@@ -1,1730 +1,1042 @@
 /**
  * BASE DE DADOS CDU (Classificação Decimal Universal)
- * Estrutura: Híbrida (Tabelas Auxiliares + Hierarquia Principal)
- * * Fonte das descrições principais: Lista fornecida pelo usuário.
- * Estrutura adaptada para o projeto 'Consulta CDD/CDU'.
+ * Estrutura: Lista Plana (Array) gerada a partir da estrutura hierárquica original.
+ * Compatível com o motor de busca unificado do app.js.
  */
+const baseCDU = [
+    // --- TABELAS AUXILIARES ---
+    { code: "(81)", desc: "Brasil (Lugar)" },
+    { code: "(038)", desc: "Dicionários (Forma)" },
+    { code: "(091)", desc: "História (Forma)" },
+    { code: "(=134.3)", desc: "Língua Portuguesa" },
+    { code: "(=111)", desc: "Língua Inglesa" },
+    { code: "\"19\"", desc: "Século XX (Tempo)" },
+    { code: "\"20\"", desc: "Século XXI (Tempo)" },
 
-const baseCDU = {
-    // 1. TABELAS AUXILIARES (Lugar, Tempo, Forma, Língua)
-    // Adicionadas para exemplo, já que não estavam na lista original
-    auxiliares: [
-        { code: "(81)", desc: "Brasil (Lugar)" },
-        { code: "(038)", desc: "Dicionários (Forma)" },
-        { code: "(091)", desc: "História (Forma)" },
-        { code: "(=134.3)", desc: "Língua Portuguesa" },
-        { code: "(=111)", desc: "Língua Inglesa" },
-        { code: "\"19\"", desc: "Século XX (Tempo)" },
-        { code: "\"20\"", desc: "Século XXI (Tempo)" }
-    ],
+    // --- CLASSE 0 ---
+    { code: "0", desc: "Ciência e conhecimento. Organização. Informática. Informação. Documentação. Biblioteconomia" },
+    { code: "00", desc: "Prolegómenos. Fundamentos do conhecimento e da cultura" },
+    { code: "001", desc: "Ciência e conhecimento em geral" },
+    { code: "001.1", desc: "Conceitos da ciência e do conhecimento" },
+    { code: "001.18", desc: "Futuro do conhecimento" },
+    { code: "001.32", desc: "Sociedades eruditas, científicas. Academias" },
+    { code: "001.8", desc: "Metodologia" },
+    { code: "001.89", desc: "Organização da ciência e do trabalho científico" },
+    { code: "001.9", desc: "Disseminação das ideias" },
+    { code: "002", desc: "Documentação. Livros. Escritos" },
+    { code: "003", desc: "Sistemas de escrita e escritas" },
+    { code: "003.01", desc: "Origens, precursores da escrita" },
+    { code: "003.02", desc: "Aparecimento da escrita" },
+    { code: "003.03", desc: "Expressão gráfica da linguagem" },
+    { code: "003.05", desc: "Meios de produção de signos e escritas" },
+    { code: "003.07", desc: "Usos e estilos da escrita" },
+    { code: "003.08", desc: "Características da escrita" },
+    { code: "003.09", desc: "Técnicas e métodos de decifração" },
+    { code: "003.2", desc: "Sistemas de escrita. Representação gráfica" },
+    { code: "003.21", desc: "Escrita pictográfica" },
+    { code: "003.22", desc: "Sistemas de escrita silábicos" },
+    { code: "003.23", desc: "Sistemas de escrita alfabéticos" },
+    { code: "003.3", desc: "Escritas" },
+    { code: "003.5", desc: "Materiais e equipamentos de escrita" },
+    { code: "003.6", desc: "Outros tipos de representação gráfica" },
+    { code: "004", desc: "Ciência e tecnologia informáticas. Computação" },
+    { code: "004.01", desc: "Documentação informática" },
+    { code: "004.02", desc: "Métodos de resolução de problemas" },
+    { code: "004.03", desc: "Tipos e características dos sistemas" },
+    { code: "004.04", desc: "Orientação do processamento" },
+    { code: "004.05", desc: "Qualidade dos sistemas e do software" },
+    { code: "004.07", desc: "Características da memória" },
+    { code: "004.08", desc: "Dispositivos de entrada e saída" },
+    { code: "004.2", desc: "Arquitectura dos computadores" },
+    { code: "004.22", desc: "Representação dos dados" },
+    { code: "004.23", desc: "Arquitectura de conjunto de instruções" },
+    { code: "004.25", desc: "Sistemas de memória" },
+    { code: "004.27", desc: "Arquitecturas avançadas" },
+    { code: "004.3", desc: "Hardware. Equipamento informático" },
+    { code: "004.31", desc: "Unidades de processamento" },
+    { code: "004.32", desc: "Circuitos do computador" },
+    { code: "004.33", desc: "Unidades de memória" },
+    { code: "004.35", desc: "Periféricos" },
+    { code: "004.38", desc: "Tipos de computador" },
+    { code: "004.4", desc: "Software" },
+    { code: "004.41", desc: "Engenharia de software" },
+    { code: "004.42", desc: "Programação de computadores" },
+    { code: "004.43", desc: "Linguagens de computador" },
+    { code: "004.45", desc: "Programas de sistemas" },
+    { code: "004.49", desc: "Infecções de computador" },
+    { code: "004.5", desc: "Interacção homem-computador" },
+    { code: "004.51", desc: "Interface de exibição" },
+    { code: "004.52", desc: "Interface de som" },
+    { code: "004.55", desc: "Hipermédia. Hipertexto" },
+    { code: "004.58", desc: "Ajuda ao utilizador" },
+    { code: "004.6", desc: "Dados" },
+    { code: "004.62", desc: "Tratamento de dados" },
+    { code: "004.63", desc: "Ficheiros" },
+    { code: "004.65", desc: "Bases de dados" },
+    { code: "004.67", desc: "Sistemas para dados numéricos" },
+    { code: "004.7", desc: "Redes de computadores" },
+    { code: "004.71", desc: "Equipamento de comunicação" },
+    { code: "004.72", desc: "Arquitectura de redes" },
+    { code: "004.73", desc: "Redes por área coberta" },
+    { code: "004.738", desc: "Interconexão de redes" },
+    { code: "004.75", desc: "Processamento distribuído" },
+    { code: "004.77", desc: "Aplicações de rede" },
+    { code: "004.78", desc: "Sistemas online específicos" },
+    { code: "004.8", desc: "Inteligência artificial" },
+    { code: "004.9", desc: "Aplicações informáticas" },
+    { code: "004.91", desc: "Processamento de documento" },
+    { code: "004.92", desc: "Infografia. Computação gráfica" },
+    { code: "004.93", desc: "Processamento de padrões" },
+    { code: "004.94", desc: "Simulação" },
+    { code: "005", desc: "Gestão" },
+    { code: "005.1", desc: "Teoria da gestão" },
+    { code: "005.2", desc: "Agentes da gestão" },
+    { code: "005.3", desc: "Actividades de gestão" },
+    { code: "005.31", desc: "Investigação operacional" },
+    { code: "005.32", desc: "Comportamento organizacional" },
+    { code: "005.33", desc: "Factores condicionantes" },
+    { code: "005.4", desc: "Processos na gestão" },
+    { code: "005.5", desc: "Operações de gestão" },
+    { code: "005.6", desc: "Gestão da qualidade (TQM)" },
+    { code: "005.7", desc: "Gestão da organização" },
+    { code: "005.9", desc: "Campos da gestão" },
+    { code: "005.91", desc: "Gestão administrativa" },
+    { code: "005.92", desc: "Gestão de arquivos" },
+    { code: "005.93", desc: "Gestão de instalações" },
+    { code: "005.94", desc: "Gestão de conhecimentos" },
+    { code: "005.95", desc: "Recursos humanos" },
+    { code: "006", desc: "Normalização e padrões" },
+    { code: "006.91", desc: "Metrologia" },
+    { code: "006.92", desc: "Horologia. Tempo" },
+    { code: "007", desc: "Actividade e organização. Cibernética" },
+    { code: "007.5", desc: "Sistemas automáticos" },
+    { code: "008", desc: "Civilização. Cultura" },
+    { code: "01", desc: "Bibliografia. Catálogos" },
+    { code: "011", desc: "Bibliografias universais" },
+    { code: "012", desc: "Bibliografias individuais" },
+    { code: "013", desc: "Bibliografias colectivas" },
+    { code: "014", desc: "Bibliografias de anónimos/pseudónimos" },
+    { code: "015", desc: "Bibliografias regionais" },
+    { code: "016", desc: "Bibliografias de assuntos" },
+    { code: "017", desc: "Catálogos de assunto" },
+    { code: "018", desc: "Catálogos onomásticos" },
+    { code: "019", desc: "Catálogos-dicionários" },
+    { code: "02", desc: "Biblioteconomia" },
+    { code: "021", desc: "Função e utilidade das bibliotecas" },
+    { code: "022", desc: "Edifícios e equipamento de bibliotecas" },
+    { code: "023", desc: "Administração de bibliotecas" },
+    { code: "024", desc: "Relações com o público" },
+    { code: "025", desc: "Departamentos administrativos" },
+    { code: "026", desc: "Bibliotecas especializadas" },
+    { code: "027", desc: "Bibliotecas gerais" },
+    { code: "027.6", desc: "Bibliotecas para grupos especiais" },
+    { code: "027.7", desc: "Bibliotecas universitárias" },
+    { code: "027.8", desc: "Bibliotecas escolares" },
+    { code: "030", desc: "Obras de referência gerais" },
+    { code: "050", desc: "Publicações em série. Periódicos" },
+    { code: "06", desc: "Organizações e colectividades" },
+    { code: "06.01", desc: "Direitos e deveres dos membros" },
+    { code: "06.05", desc: "Prémios e distinções" },
+    { code: "061", desc: "Organizações" },
+    { code: "061.1", desc: "Organizações governamentais" },
+    { code: "061.2", desc: "Organizações não governamentais" },
+    { code: "061.23", desc: "Organizações filantrópicas" },
+    { code: "061.25", desc: "Organizações secretas" },
+    { code: "061.27", desc: "Fundações" },
+    { code: "069", desc: "Museus" },
+    { code: "070", desc: "Jornais. Imprensa" },
+    { code: "08", desc: "Poligrafias. Colectâneas" },
+    { code: "082", desc: "Poligrafias colectivas" },
+    { code: "084", desc: "Material pictórico" },
+    { code: "086", desc: "Documentos de forma particular" },
+    { code: "087", desc: "Documentos de origem particular" },
+    { code: "09", desc: "Manuscritos. Livros raros" },
+    { code: "091", desc: "Manuscritos" },
+    { code: "092", desc: "Livros xilográficos" },
+    { code: "093", desc: "Incunábulos" },
+    { code: "094", desc: "Obras raras impressas" },
+    { code: "095", desc: "Encadernações notáveis" },
+    { code: "096", desc: "Ilustrações notáveis" },
+    { code: "097", desc: "Marcas de propriedade" },
 
-    // 2. TABELA PRINCIPAL (Hierárquica)
-    principal: {
-        "0": {
-            desc: "Ciência e conhecimento. Organização. Informática. Informação. Documentação. Biblioteconomia. Instituições. Publicações",
-            children: {
-                "00": {
-                    desc: "Prolegómenos. Fundamentos do conhecimento e da cultura. Propadéutica",
-                    children: {
-                        "001": {
-                            desc: "Ciência e conhecimento em geral. Organização do trabalho intelectual",
-                            children: {
-                                "001.1": { desc: "Conceitos da ciência e do conhecimento", children: { "001.18": { desc: "Futuro do conhecimento" } } },
-                                "001.32": { desc: "Sociedades eruditas, científicas. Academias" },
-                                "001.8": { desc: "Metodologia", children: { "001.89": { desc: "Organização da ciência e do trabalho científico" } } },
-                                "001.9": { desc: "Disseminação das ideias" }
-                            }
-                        },
-                        "002": { desc: "Documentação. Livros. Escritos. Autoria" },
-                        "003": {
-                            desc: "Sistemas de escrita e escritas",
-                            children: {
-                                "003.01": { desc: "Origens, precursores da escrita. Formas primitivas de escrita" },
-                                "003.02": { desc: "Aparecimento da escrita" },
-                                "003.03": { desc: "Expressão gráfica da linguagem" },
-                                "003.05": { desc: "Meios de produção de signos e escritas" },
-                                "003.07": { desc: "Usos e estilos da escrita" },
-                                "003.08": { desc: "Características da escrita" },
-                                "003.09": { desc: "Técnicas e métodos de decifração de escritas" },
-                                "003.2": {
-                                    desc: "Sistemas de escrita. Representação gráfica de conceitos",
-                                    children: {
-                                        "003.21": { desc: "Escrita pictográfica" },
-                                        "003.22": { desc: "Sistemas de escrita silábicos" },
-                                        "003.23": { desc: "Sistemas de escrita alfabéticos" }
-                                    }
-                                },
-                                "003.3": { desc: "Escritas" },
-                                "003.5": { desc: "Materiais e equipamentos de escrita" },
-                                "003.6": { desc: "Outros tipos de representação gráfica do pensamento" }
-                            }
-                        },
-                        "004": {
-                            desc: "Ciência e tecnologia informáticas. Computação. Processamento de dados",
-                            children: {
-                                "004.01": { desc: "Documentação" },
-                                "004.02": { desc: "Métodos de resolução dos problemas" },
-                                "004.03": { desc: "Tipos e características dos sistemas" },
-                                "004.04": { desc: "Orientação do processamento" },
-                                "004.05": { desc: "Qualidade dos sistemas e do software" },
-                                "004.07": { desc: "Características da memória" },
-                                "004.08": { desc: "Dispositivos de entrada (input), saída (output) e armazenamento" },
-                                "004.2": {
-                                    desc: "Arquitectura dos computadores",
-                                    children: {
-                                        "004.22": { desc: "Representação dos dados" },
-                                        "004.23": { desc: "Arquitectura de conjunto de instruções" },
-                                        "004.25": { desc: "Sistemas de memória" },
-                                        "004.27": { desc: "Arquitecturas avançadas. Outras arquitecturas que a de Von Neumann" }
-                                    }
-                                },
-                                "004.3": {
-                                    desc: "Equipamento informático. Hardware",
-                                    children: {
-                                        "004.31": { desc: "Unidades de processamento. Circuitos de processamento" },
-                                        "004.32": { desc: "Circuitos do computador" },
-                                        "004.33": { desc: "Unidades da memória. Unidades de armazenamento" },
-                                        "004.35": { desc: "Periféricos. Unidades de entrada e saída (input-output)" },
-                                        "004.38": { desc: "Computador. Tipos de computador" }
-                                    }
-                                },
-                                "004.4": {
-                                    desc: "Programas de computador (software)",
-                                    children: {
-                                        "004.41": { desc: "Engenharia de software" },
-                                        "004.42": { desc: "Programação de computadores. Programas de computador" },
-                                        "004.43": { desc: "Linguagens de computador" },
-                                        "004.45": { desc: "Programas de sistemas" },
-                                        "004.49": { desc: "Infecções de computador" }
-                                    }
-                                },
-                                "004.5": {
-                                    desc: "Interacção homem-computador. Interface homem-máquina. Interface do utilizador",
-                                    children: {
-                                        "004.51": { desc: "Interface de exibição" },
-                                        "004.52": { desc: "Interface de som" },
-                                        "004.55": { desc: "Hipermédia. Hipertexto" },
-                                        "004.58": { desc: "Ajuda ao utilizador" }
-                                    }
-                                },
-                                "004.6": {
-                                    desc: "Dados",
-                                    children: {
-                                        "004.62": { desc: "Tratamento de dados" },
-                                        "004.63": { desc: "Ficheiros" },
-                                        "004.65": { desc: "Bases de dados e suas estruturas" },
-                                        "004.67": { desc: "Sistemas para dados numéricos" }
-                                    }
-                                },
-                                "004.7": {
-                                    desc: "Comunicação de computadores. Redes de computadores",
-                                    children: {
-                                        "004.71": { desc: "Equipamento para comunicação entre computadores" },
-                                        "004.72": { desc: "Arquitectura de redes" },
-                                        "004.73": { desc: "Redes de acordo com a área coberta", children: { "004.738": { desc: "Interconexão de redes" } } },
-                                        "004.75": { desc: "Sistemas de processamento distribuído" },
-                                        "004.77": { desc: "Aplicações e serviços gerais de rede" },
-                                        "004.78": { desc: "Sistemas de computadores em linha para fins específicos" }
-                                    }
-                                },
-                                "004.8": { desc: "Inteligência artificial" },
-                                "004.9": {
-                                    desc: "Técnicas baseadas em computadores e orientadas para aplicações",
-                                    children: {
-                                        "004.91": { desc: "Processamento e produção do documento" },
-                                        "004.92": { desc: "Infografia. Computação gráfica" },
-                                        "004.93": { desc: "Processamento de padrões de informação" },
-                                        "004.94": { desc: "Simulação" }
-                                    }
-                                }
-                            }
-                        },
-                        "005": {
-                            desc: "Gestão",
-                            children: {
-                                "005.1": { desc: "Teoria da gestão" },
-                                "005.2": { desc: "Agentes da gestão. Mecanismos. Medidas" },
-                                "005.3": {
-                                    desc: "Actividades de gestão",
-                                    children: {
-                                        "005.31": { desc: "Investigação operacional (IO)" },
-                                        "005.32": { desc: "Comportamento organizacional. Psicologia da gestão" },
-                                        "005.33": { desc: "Factores condicionantes da gestão" }
-                                    }
-                                },
-                                "005.4": { desc: "Processos na gestão" },
-                                "005.5": { desc: "Operações de gestão. Direcção" },
-                                "005.6": { desc: "Gestão da qualidade. Gestão da qualidade total (TQM)" },
-                                "005.7": { desc: "Gestão da organização" },
-                                "005.9": {
-                                    desc: "Áreas, campos da gestão",
-                                    children: {
-                                        "005.91": { desc: "Gestão administrativa. Secretariado" },
-                                        "005.92": { desc: "Gestão de documentos de arquivo (gestão de registos)" },
-                                        "005.93": { desc: "Gestão das instalações. Gestão dos recursos físicos" },
-                                        "005.94": { desc: "Gestão de conhecimentos" },
-                                        "005.95": { desc: "Gestão de pessoal. Gestão de recursos humanos" }
-                                    }
-                                }
-                            }
-                        },
-                        "006": {
-                            desc: "Normalização de produtos, operações, pesos, medidas e tempo",
-                            children: {
-                                "006.91": { desc: "Metrologia. Pesos e medidas em geral" },
-                                "006.92": { desc: "Horologia. Determinação e normalização do tempo" }
-                            }
-                        },
-                        "007": { desc: "Actividade e organização. Teoria da comunicação e do controlo (cibernética)", children: { "007.5": { desc: "Sistemas automáticos" } } },
-                        "008": { desc: "Civilização. Cultura. Progresso" }
-                    }
-                },
-                "01": {
-                    desc: "Bibliografia e bibliografias. Catálogos",
-                    children: {
-                        "011": { desc: "Bibliografias universais e gerais" },
-                        "012": { desc: "Bibliografias de autores. Bibliografias individuais" },
-                        "013": { desc: "Bibliografias colectivas" },
-                        "014": { desc: "Bibliografias de obras com características especiais" },
-                        "015": { desc: "Bibliografias segundo o lugar" },
-                        "016": { desc: "Bibliografias de assuntos específicos. Bibliografias especializadas" },
-                        "017": { desc: "Catálogos em geral. Catálogos de assunto" },
-                        "018": { desc: "Catálogos onomásticos" },
-                        "019": { desc: "Catálogos-dicionários" }
-                    }
-                },
-                "02": {
-                    desc: "Biblioteconomia",
-                    children: {
-                        "021": { desc: "Função, valor, utilidade, criação, desenvolvimento de bibliotecas" },
-                        "022": { desc: "Localização da biblioteca, edifícios. Equipamento" },
-                        "023": { desc: "Administração da biblioteca. Pessoal" },
-                        "024": { desc: "Relações da biblioteca com o público. Regulamentos sobre o uso da biblioteca" },
-                        "025": { desc: "Departamentos administrativos das bibliotecas" },
-                        "026": { desc: "Bibliotecas especializadas" },
-                        "027": {
-                            desc: "Bibliotecas gerais",
-                            children: {
-                                "027.6": { desc: "Bibliotecas destinadas a determinadas categorias de leitores" },
-                                "027.7": { desc: "Bibliotecas de estabelecimentos de ensino superior" },
-                                "027.8": { desc: "Bibliotecas de estabelecimentos de ensino primário e secundário" }
-                            }
-                        }
-                    }
-                },
-                "030": { desc: "Obras gerais de referência (como assunto)" },
-                "050": { desc: "Publicações periódicas, periódicos (como assunto)" },
-                "06": {
-                    desc: "Organizações em geral",
-                    children: {
-                        "06.01": { desc: "Direitos e deveres dos membros" },
-                        "06.05": { desc: "Recompensas. Distinções. Prémios" },
-                        "061": {
-                            desc: "Organizações e outros tipos de cooperação",
-                            children: {
-                                "061.1": { desc: "Organizações e cooperação governamentais" },
-                                "061.2": {
-                                    desc: "Organizações e cooperação não governamentais",
-                                    children: {
-                                        "061.23": { desc: "Organizações com fins humanitários, filantrópicos" },
-                                        "061.25": { desc: "Organizações e movimentos secretos e semi-secretos" },
-                                        "061.27": { desc: "Fundações. Dotações. Institutos" }
-                                    }
-                                }
-                            }
-                        },
-                        "069": { desc: "Museus. Exposições permanentes" }
-                    }
-                },
-                "070": { desc: "Jornais. Imprensa" },
-                "08": {
-                    desc: "Poligrafias. Obras de autoria colectiva",
-                    children: {
-                        "082": { desc: "Poligrafias colectivas" },
-                        "084": { desc: "Material pictórico" },
-                        "086": { desc: "Documentos de forma particular" },
-                        "087": { desc: "Documentos de origem ou destino particular" }
-                    }
-                },
-                "09": {
-                    desc: "Manuscritos. Obras raras e notáveis",
-                    children: {
-                        "091": { desc: "Manuscritos" },
-                        "092": { desc: "Livros xilográficos" },
-                        "093": { desc: "Incunábulos" },
-                        "094": { desc: "Outras obras impressas notáveis e raras" },
-                        "095": { desc: "Obras notáveis pela encadernação" },
-                        "096": { desc: "Obras notáveis pelas ilustrações ou pelos materiais utilizados" },
-                        "097": { desc: "Marcas de propriedade ou de origem" }
-                    }
-                }
-            }
-        },
-        "1": {
-            desc: "Filosofia. Psicologia",
-            children: {
-                "101": { desc: "Natureza e âmbito da filosofia" },
-                "11": { desc: "Metafísica", children: { "111": { desc: "Metafísica geral. Ontologia" } } },
-                "13": {
-                    desc: "Filosofia da mente e do espírito. Metafísica da vida espiritual",
-                    children: {
-                        "130.1": { desc: "Conceitos e leis gerais" },
-                        "130.2": { desc: "Filosofia da cultura. Sistemas culturais" },
-                        "130.3": { desc: "Metafísica da vida espiritual" },
-                        "133": { desc: "Paranormal. O oculto. Fenómenos psi" }
-                    }
-                },
-                "14": {
-                    desc: "Sistemas e pontos de vista filosóficos",
-                    children: {
-                        "140": { desc: "Atitudes filosóficas possíveis. Tipologia de sistemas filosóficos" },
-                        "141": { desc: "Tipos de pontos de vista filosóficos" }
-                    }
-                },
-                "159.9": {
-                    desc: "Psicologia",
-                    children: {
-                        "159.91": { desc: "Psicofisiologia (psicologia fisiológica). Fisiologia mental" },
-                        "159.92": { desc: "Desenvolvimento e capacidade mental. Psicologia comparada" },
-                        "159.93": { desc: "Sensação. Percepção sensorial" },
-                        "159.94": {
-                            desc: "Funções executivas",
-                            children: {
-                                "159.942": { desc: "Emoções. Afectos. Sensibilidade. Sentimentos" },
-                                "159.943": { desc: "Conação e movimento" },
-                                "159.944": { desc: "Trabalho e fadiga. Eficiência" },
-                                "159.946": { desc: "Funções motoras especiais" },
-                                "159.947": { desc: "Volição. Vontade" }
-                            }
-                        },
-                        "159.95": { desc: "Processos mentais superiores" },
-                        "159.96": { desc: "Estados e processos mentais especiais" },
-                        "159.97": { desc: "Psicopatologia" },
-                        "159.98": { desc: "Psicologia aplicada (psicotecnologia) em geral" }
-                    }
-                },
-                "16": {
-                    desc: "Lógica. Epistemologia. Teoria do conhecimento",
-                    children: {
-                        "161": { desc: "Fundamentos da lógica" },
-                        "164": { desc: "Logística. Lógica simbólica. Lógica matemática" },
-                        "165": { desc: "Teoria do conhecimento. Epistemologia" }
-                    }
-                },
-                "17": {
-                    desc: "Filosofia moral. Ética. Filosofia prática",
-                    children: {
-                        "171": { desc: "Ética individual. Deveres do indivíduo para consigo mesmo" },
-                        "172": { desc: "Ética social. Deveres para com os outros" },
-                        "173": { desc: "Ética familiar" },
-                        "176": { desc: "Ética sexual. Moralidade sexual" },
-                        "177": { desc: "Ética e sociedade" }
-                    }
-                }
-            }
-        },
-        "2": {
-            desc: "Religião. Teologia",
-            children: {
-                "2-1": {
-                    desc: "Teoria e filosofia da religião. Natureza da religião",
-                    children: {
-                        "2-13": { desc: "O divino. O Sagrado. O Sobrenatural" },
-                        "2-14": { desc: "Deus. Deuses" },
-                        "2-15": { desc: "Natureza de Deus(es)" },
-                        "2-17": { desc: "Universo. Natureza do Universo. Cosmologia" },
-                        "2-18": { desc: "Homem. Humanidade. Condição humana", children: { "2-184": { desc: "Relação do Homem com Deus(es)" } } }
-                    }
-                },
-                "2-2": {
-                    desc: "Provas da religião",
-                    children: {
-                        "2-23": { desc: "Livros sagrados. Escrituras. Textos religiosos" },
-                        "2-25": { desc: "Literatura secundária. Obras pseudocanónicas" },
-                        "2-27": { desc: "Obras críticas" },
-                        "2-28": { desc: "Outros textos religiosos" }
-                    }
-                },
-                "2-3": {
-                    desc: "Pessoas na religião",
-                    children: {
-                        "2-31": { desc: "Criador, fundador, figura central da fé" },
-                        "2-32": { desc: "Messias" },
-                        "2-34": { desc: "Mártires" },
-                        "2-35": { desc: "Ascetas. Eremitas. Faquires" },
-                        "2-36": { desc: "Santos. Bodhisattvas. Pessoas iluminadas" },
-                        "2-37": { desc: "Mahatmas. Gurus. Sábios" },
-                        "2-38": { desc: "Carismáticos. Pessoas com poderes sobrenaturais" }
-                    }
-                },
-                "2-4": {
-                    desc: "Actividades religiosas. Práticas religiosas",
-                    children: {
-                        "2-42": { desc: "Comportamento moral. Teologia moral" },
-                        "2-43": { desc: "Costumes e prática social. Teologia social" },
-                        "2-46": { desc: "Caridade. Apoio aos outros. Actividades pastorais" },
-                        "2-47": { desc: "Educação religiosa", children: { "2-475": { desc: "Pregação. Homiliética" } } }
-                    }
-                },
-                "2-5": {
-                    desc: "Veneração. Culto. Rituais e cerimónias",
-                    children: {
-                        "2-523": { desc: "Edifícios para uso religioso. Eclesiologia" },
-                        "2-526": { desc: "Objectos do culto. Mobiliário e decoração" },
-                        "2-53": { desc: "Actos de veneração/adoração" },
-                        "2-54": { desc: "Cerimónias segundo o objectivo" },
-                        "2-55": { desc: "Sacramentos" },
-                        "2-56": { desc: "Celebração" }
-                    }
-                },
-                "2-6": {
-                    desc: "Processos em religião",
-                    children: {
-                        "2-65": { desc: "Comparação de religiões" },
-                        "2-67": { desc: "Relações entre confissões religiosas" }
-                    }
-                },
-                "2-7": {
-                    desc: "Organização e administração religiosa",
-                    children: {
-                        "2-72": { desc: "Natureza e estructura da religião organizada" },
-                        "2-73": { desc: "Governo da religião" },
-                        "2-74": { desc: "Administração legal. Lei religiosa. Direito canónico" },
-                        "2-76": { desc: "Recrutamento. Actividade missionária" },
-                        "2-77": { desc: "Estrutura organizacional da fé, da religião" },
-                        "2-78": { desc: "Organizações religiosas. Sociedades e associações religiosas" }
-                    }
-                },
-                "2-84": { desc: "Religiões associadas ao Estado" },
-                "2-87": { desc: "Cismas. Heresias" },
-                "2-9": { desc: "História da fé, religião, denominação ou igreja" },
-                "21": {
-                    desc: "Religiões pré-históricas e primitivas",
-                    children: {
-                        "212": { desc: "Religiões pré-históricas" },
-                        "213": { desc: "Religiões primitivas" }
-                    }
-                },
-                "22": {
-                    desc: "Religiões originárias do Extremo Oriente",
-                    children: {
-                        "221": { desc: "Religiões da China", children: { "221.3": { desc: "Taoismo" } } },
-                        "223": { desc: "Religiões da Coreia" },
-                        "225": { desc: "Religiões do Japão" }
-                    }
-                },
-                "23": {
-                    desc: "Religiões originárias do sub-continente indiano. Hinduísmo",
-                    children: {
-                        "233": { desc: "Hinduismo em sentido restrito" },
-                        "234": { desc: "Jainismo" },
-                        "235": { desc: "Sikhismo" }
-                    }
-                },
-                "24": {
-                    desc: "Budismo",
-                    children: {
-                        "241": { desc: "Budismo hinayana. O Pequeno Veículo" },
-                        "242": { desc: "Budismo mahayana. O Grande Veículo" },
-                        "243": { desc: "Lamaísmo" },
-                        "244": { desc: "Budismo japonês" }
-                    }
-                },
-                "25": {
-                    desc: "Religiões da antiguidade. Cultos e religiões menores",
-                    children: {
-                        "251": { desc: "Religião do Egipto antigo" },
-                        "252": { desc: "Religiões da Mesopotâmia" },
-                        "254": { desc: "Religiões do Irão" },
-                        "255": { desc: "Religiões da antiguidade clássica" },
-                        "257": { desc: "Religiões da Europa" },
-                        "258": { desc: "Religiões da América Central e do Sul" }
-                    }
-                },
-                "26": {
-                    desc: "Judaísmo",
-                    children: {
-                        "261": { desc: "Religião do período Bíblico. Judaísmo antigo" },
-                        "262": { desc: "Judaísmo asquenazita" },
-                        "264": { desc: "Judaísmo sefardita" },
-                        "265": { desc: "Judaísmo ortodoxo" },
-                        "266": { desc: "Judaísmo progressista" },
-                        "267": { desc: "Movimentos modernos originários do Judaísmo" }
-                    }
-                },
-                "27": {
-                    desc: "Cristianismo. Igrejas e denominações cristãs",
-                    children: {
-                        "271": { desc: "Igrejas do Oriente" },
-                        "272": { desc: "Igreja Católica Romana" },
-                        "273": { desc: "Igrejas episcopais católicas não filiadas a Roma" },
-                        "274": { desc: "Protestantismo em sentido lato" },
-                        "275": { desc: "Igrejas reformadas" },
-                        "276": { desc: "Anabaptistas" },
-                        "277": { desc: "Igrejas livres. Não conformistas" },
-                        "278": { desc: "Outras igrejas protestantes" },
-                        "279": { desc: "Outros movimentos e igrejas cristãs" }
-                    }
-                },
-                "28": {
-                    desc: "Islamismo",
-                    children: {
-                        "281": { desc: "Sufismo" },
-                        "282": { desc: "Sunni. Islamismo sunita" },
-                        "284": { desc: "Shi'a. Islamismo xiita" },
-                        "285": { desc: "Babismo" },
-                        "286": { desc: "Bahaísmo" }
-                    }
-                },
-                "29": { desc: "Movimentos espirituais modernos" }
-            }
-        },
-        "3": {
-            desc: "Ciências Sociais",
-            children: {
-                "303": { desc: "Métodos das ciências sociais" },
-                "304": { desc: "Questões sociais. Prática social" },
-                "305": { desc: "Estudos do género" },
-                "308": { desc: "Sociografia" },
-                "311": {
-                    desc: "Estatística como ciência. Teoria estatística",
-                    children: {
-                        "311.1": { desc: "Fundamentos, bases da estatística" },
-                        "311.2": { desc: "Técnica de pesquisa. Preparação. Tabulação" },
-                        "311.3": { desc: "Organização geral das estatísticas. Estatísticas oficiais" },
-                        "311.4": { desc: "Estatísticas privadas" }
-                    }
-                },
-                "314": { desc: "Demografia. Estudos da população", children: { "314.1": { desc: "População" } } },
-                "316": {
-                    desc: "Sociologia",
-                    children: {
-                        "316.1": { desc: "Objecto e âmbito da sociologia" },
-                        "316.2": { desc: "Pontos de vista e tendências sociológicas" },
-                        "316.3": {
-                            desc: "Estrutura social. Sociedade como sistema social",
-                            children: {
-                                "316.33": { desc: "Elementos básicos e subsistemas das sociedades globais" },
-                                "316.34": { desc: "Estratificação social. Diferenciação social" },
-                                "316.35": { desc: "Grupos sociais. Organizações sociais" },
-                                "316.36": { desc: "Casamento e familía" }
-                            }
-                        },
-                        "316.4": { desc: "Processos sociais. Dinâmicas sociais" },
-                        "316.6": { desc: "Psicologia social" },
-                        "316.7": { desc: "Sociologia da cultura. Contexto cultural da vida social" }
-                    }
-                },
-                "32": {
-                    desc: "Política",
-                    children: {
-                        "321": { desc: "Formas de organização política. Estados como poderes políticos" },
-                        "322": { desc: "Relações entre o estado e a igreja" },
-                        "323": {
-                            desc: "Assuntos internos. Política interna",
-                            children: {
-                                "323.1": { desc: "Movimentos e problemas nacionalistas, populares e étnicos" },
-                                "323.2": { desc: "Relações entre a população e o Estado" },
-                                "323.4": { desc: "Luta de classes" }
-                            }
-                        },
-                        "324": { desc: "Eleições. Plebiscitos. Referendos" },
-                        "325": { desc: "Abertura de territórios. Colonização. Colonialismo" },
-                        "326": { desc: "Escravatura" },
-                        "327": {
-                            desc: "Relações internacionais. Política mundial",
-                            children: {
-                                "327.2": { desc: "Imperialismo. Política imperialista" },
-                                "327.3": { desc: "Internacionalismo" },
-                                "327.5": { desc: "Blocos internacionais" },
-                                "327.7": { desc: "Actividade das organizações internacionais e intergovernamentais" },
-                                "327.8": { desc: "Influência política, pressão sobre outros Estados" }
-                            }
-                        },
-                        "328": { desc: "Parlamentos. Congressos. Governos" },
-                        "329": { desc: "Partidos e movimentos políticos" }
-                    }
-                },
-                "33": {
-                    desc: "Economia. Ciência económica",
-                    children: {
-                        "330": {
-                            desc: "Economia em geral",
-                            children: {
-                                "330.1": { desc: "Ciência económica. Teoria, conceitos económicos básicos" },
-                                "330.3": { desc: "Dinâmica da economia. Movimento económico" },
-                                "330.4": { desc: "Economia matemática" },
-                                "330.5": { desc: "Propriedade nacional. Contabilidade nacional" },
-                                "330.8": { desc: "História das teorias, doutrinas, dogmas económicos" }
-                            }
-                        },
-                        "331": {
-                            desc: "Trabalho. Emprego. Economia do trabalho",
-                            children: {
-                                "331.1": { desc: "Teoria e organização do trabalho" },
-                                "331.2": { desc: "Salários. Ordenados. Remuneração" },
-                                "331.3": { desc: "Outras condições de trabalho, além do salário" },
-                                "331.4": { desc: "Ambiente de trabalho. Segurança e higiene do trabalho" },
-                                "331.5": { desc: "Mercado de trabalho. Emprego" }
-                            }
-                        },
-                        "332": {
-                            desc: "Economia regional. Economia territorial",
-                            children: {
-                                "332.1": { desc: "Economia regional. Economia territorial" },
-                                "332.2": { desc: "Economia da terra" },
-                                "332.3": { desc: "Utilização da terra" },
-                                "332.5": { desc: "Procura da terra" },
-                                "332.6": { desc: "Valor da terra. Valor da propriedade imóvel" },
-                                "332.7": { desc: "Comércio de terra, de bens imóveis" },
-                                "332.8": { desc: "Economia da habitação" }
-                            }
-                        },
-                        "334": { desc: "Formas de organização e cooperação na economia" },
-                        "336": {
-                            desc: "Finanças",
-                            children: {
-                                "336.1": { desc: "Finanças públicas. Finanças do governo em geral" },
-                                "336.2": { desc: "Receitas públicas" },
-                                "336.5": { desc: "Despesa pública. Despesa do estado" },
-                                "336.7": { desc: "Moeda. Sistema monetário. Banca. Bolsa de valores" }
-                            }
-                        },
-                        "338": {
-                            desc: "Situação económica. Política económica. Produção",
-                            children: {
-                                "338.1": { desc: "Situação económica. Ciclo económico" },
-                                "338.2": { desc: "Política económica. Gestão da economia" },
-                                "338.3": { desc: "Produção" },
-                                "338.4": { desc: "Produção e serviços segundo os sectores económicos", children: { "338.48": { desc: "Turismo" } } },
-                                "338.5": { desc: "Preços. Formação de preços. Custos" }
-                            }
-                        },
-                        "339": {
-                            desc: "Comércio. Relações económicas internacionais",
-                            children: {
-                                "339.1": { desc: "Questões gerais sobre as trocas e o comércio" },
-                                "339.3": { desc: "Comércio interno. Comércio nacional" },
-                                "339.5": { desc: "Comércio externo. Comércio internacional" },
-                                "339.7": { desc: "Finanças internacionais" },
-                                "339.9": { desc: "Economia internacional. Economia global" }
-                            }
-                        }
-                    }
-                },
-                "34": {
-                    desc: "Direito. Jurisprudência",
-                    children: {
-                        "340": {
-                            desc: "Lei em geral. Métodos jurídicos",
-                            children: {
-                                "340.1": { desc: "Tipos e formas do direito", children: { "340.13": { desc: "Direito positivo. Norma legal" }, "340.14": { desc: "Leis não escritas. Leis não estatutárias" } } },
-                                "340.5": { desc: "Direito comparado" },
-                                "340.6": { desc: "Ciências auxiliares do direito. Medicina legal" }
-                            }
-                        },
-                        "341": {
-                            desc: "Direito internacional. Direito das nações",
-                            children: {
-                                "341.1": { desc: "Direito das organizações internacionais" },
-                                "341.2": { desc: "Sujeitos e objectos do direito internacional" },
-                                "341.3": { desc: "Direito de guerra" },
-                                "341.4": { desc: "Direito penal internacional" },
-                                "341.6": { desc: "Arbitragem internacional. Adjudicação e jurisdição internacionais" },
-                                "341.7": { desc: "Direito diplomático" },
-                                "341.8": { desc: "Direito consular" },
-                                "341.9": { desc: "Direito internacional privado. Conflitos de leis" }
-                            }
-                        },
-                        "342": {
-                            desc: "Direito público. Direito constitucional",
-                            children: {
-                                "342.1": { desc: "Estado. Povo. Nação. Poder do Estado" },
-                                "342.2": { desc: "Estado. Estrutura dos estados" },
-                                "342.3": { desc: "Autoridade suprema. Soberania. Formas de Estado" },
-                                "342.4": { desc: "Constituições. Assembleias legislativas" },
-                                "342.5": { desc: "Poderes do Estado" },
-                                "342.6": { desc: "Poder executivo do Estado" },
-                                "342.7": { desc: "Direitos e liberdades fundamentais. Direitos humanos" },
-                                "342.8": { desc: "Lei eleitoral. Votação. Sistemas eleitorais" },
-                                "342.9": { desc: "Direito administrativo" }
-                            }
-                        },
-                        "343": {
-                            desc: "Direito penal. Delitos penais",
-                            children: {
-                                "343.1": { desc: "Justiça penal. Investigação penal. Processo penal" },
-                                "343.2": { desc: "Direito penal propriamente dito" },
-                                "343.3": { desc: "Crimes contra o Estado" },
-                                "343.4": { desc: "Atentados contra as liberdades fundamentais" },
-                                "343.5": { desc: "Infracções contra a confiança pública, a moral, a família" },
-                                "343.6": { desc: "Infracções contra pessoas" },
-                                "343.8": { desc: "Pena. Execução de sentença" },
-                                "343.9": { desc: "Criminologia. Ciências criminais" }
-                            }
-                        },
-                        "344": { desc: "Direito penal especial. Direito penal militar" },
-                        "346": {
-                            desc: "Direito económico",
-                            children: {
-                                "346.2": { desc: "Sujeitos do direito económico" },
-                                "346.3": { desc: "Responsabilidades económicas. Contratos económicos" },
-                                "346.5": { desc: "Regulação da ordem económica e seu controlo" },
-                                "346.6": { desc: "Regulação de preços, tarifas, finanças, créditos e contas" },
-                                "346.7": { desc: "Regulação dos sectores individuais da economia" },
-                                "346.9": { desc: "Aplicação do direito económico" }
-                            }
-                        },
-                        "347": {
-                            desc: "Direito civil",
-                            children: {
-                                "347.1": { desc: "Direito civil em geral" },
-                                "347.2": { desc: "Direitos reais" },
-                                "347.3": { desc: "Bens móveis em geral. Bens mobiliários" },
-                                "347.4": { desc: "Obrigações. Responsabilidade contratual. Contratos" },
-                                "347.5": { desc: "Responsabilidades não contratuais. Danos" },
-                                "347.6": { desc: "Direito da família. Direito das sucessões" },
-                                "347.7": { desc: "Direito comercial. Direito das sociedades" },
-                                "347.8": { desc: "Direito do ar, do espaço, do éter" },
-                                "347.9": { desc: "Direito processual. Organização e pessoal judiciário" }
-                            }
-                        },
-                        "348": { desc: "Direito eclesiástico. Direito canónico" },
-                        "349": { desc: "Ramos especiais do direito" }
-                    }
-                },
-                "35": {
-                    desc: "Administração pública. Governo. Assuntos militares",
-                    children: {
-                        "351": { desc: "Actividades específicas da administração pública" },
-                        "352": { desc: "Níveis mais baixos da administração pública. Governo local" },
-                        "353": {
-                            desc: "Níveis médios da administração. Governo regional",
-                            children: {
-                                "353.1": { desc: "Divisões primárias do país. Regiões" },
-                                "353.2": { desc: "Governos provinciais. Províncias" },
-                                "353.5": { desc: "Divisões das províncias. Distritos" },
-                                "353.8": { desc: "Tipos especiais da administração regional" },
-                                "353.9": { desc: "Administração independente das regiões de um país" }
-                            }
-                        },
-                        "354": { desc: "Nível mais alto da administração. Governo central", children: { "354.1": { desc: "Ministérios para assuntos gerais" } } },
-                        "355": {
-                            desc: "Assuntos militares em geral",
-                            children: {
-                                "355.1": { desc: "Forças armadas em geral. Vida militar" },
-                                "355.2": { desc: "Recrutamento de forças. Recrutamento" },
-                                "355.3": { desc: "Organização geral das forças armadas" },
-                                "355.4": { desc: "Operações de guerra em geral. Táctica. Estratégia" },
-                                "355.5": { desc: "Serviços e tácticas de forças e unidades específicas" },
-                                "355.6": { desc: "Administração militar" },
-                                "355.7": { desc: "Estabelecimentos militares. Organização. Funções" }
-                            }
-                        },
-                        "356": { desc: "Serviços do exército em geral. Infantaria" },
-                        "357": { desc: "Cavalaria. Tropas montadas. Tropas motorizadas" },
-                        "358": {
-                            desc: "Artilharia. Engenharia. Aviação",
-                            children: {
-                                "358.1": { desc: "Artilharia" },
-                                "358.4": { desc: "Aviação militar. Força aérea" }
-                            }
-                        },
-                        "359": { desc: "Forças navais. Marinha" }
-                    }
-                },
-                "36": {
-                    desc: "Protecção das necessidades materiais e mentais da vida. Serviço social",
-                    children: {
-                        "364": {
-                            desc: "Bem-estar social",
-                            children: {
-                                "364-1": { desc: "Teorias sobre o bem-estar social" },
-                                "364-2": { desc: "Princípios da assistência" },
-                                "364-3": { desc: "Agências de bem-estar social" },
-                                "364-4": { desc: "Pessoas como provedoras de assistência ao bem-estar social" },
-                                "364-5": { desc: "Instalações do bem-estar social" },
-                                "364-6": { desc: "Contribuições e pagamentos" },
-                                "364-7": { desc: "Processos do bem-estar social. Serviços sociais" },
-                                "364.2": { desc: "Necessidades humanas básicas" },
-                                "364.3": { desc: "Benefícios sociais. Segurança social" },
-                                "364.4": { desc: "Áreas de actuação do serviço social" },
-                                "364.6": { desc: "Questões do bem-estar social" }
-                            }
-                        },
-                        "365": { desc: "Desejo de habitação e sua satisfação" },
-                        "366": { desc: "Consumerismo" },
-                        "368": { desc: "Seguros" }
-                    }
-                },
-                "37": {
-                    desc: "Educação",
-                    children: {
-                        "37.01": { desc: "Fundamentos da educação. Teoria" },
-                        "37.02": { desc: "Questões gerais de didáctica e método" },
-                        "37.04": { desc: "Educação em relação ao educando" },
-                        "37.06": { desc: "Problemas sociais na educação" },
-                        "37.07": { desc: "Aspectos relacionados com a gestão de instituições de ensino" },
-                        "37.09": { desc: "Organização da instrução" },
-                        "373": { desc: "Tipos de escolas que ministram ensino em geral" },
-                        "374": { desc: "Ensino e formação extra-escolares" },
-                        "376": { desc: "Educação, ensino e treino de grupos especiais" },
-                        "377": { desc: "Ensino especializado. Formação técnica e profissional" },
-                        "378": { desc: "Ensino superior. Universidades" },
-                        "379.8": { desc: "Lazer" }
-                    }
-                },
-                "39": {
-                    desc: "Antropologia cultural. Etnologia. Etnografia",
-                    children: {
-                        "391": { desc: "Vestuário. Indumentária. Moda" },
-                        "392": { desc: "Usos e costumes na vida privada" },
-                        "393": { desc: "Morte. Tratamento de cadáveres. Funerais" },
-                        "394": { desc: "Vida pública. Vida social" },
-                        "395": { desc: "Cerimonial social. Etiqueta" },
-                        "398": { desc: "Folclore em sentido restrito" }
-                    }
-                }
-            }
-        },
-        "5": {
-            desc: "Matemática. Ciências Naturais",
-            children: {
-                "502": { desc: "O meio ambiente e a sua protecção" },
-                "504": { desc: "Ameaças ao ambiente" },
-                "51": {
-                    desc: "Matemática",
-                    children: {
-                        "510": {
-                            desc: "Considerações fundamentais e gerais das matemáticas",
-                            children: {
-                                "510.2": { desc: "Problemas gerais da lógica matemática" },
-                                "510.3": { desc: "Teoria dos conjuntos" },
-                                "510.6": { desc: "Lógica matemática" }
-                            }
-                        },
-                        "511": { desc: "Teoria dos números" },
-                        "512": { desc: "Álgebra" },
-                        "514": { desc: "Geometria", children: { "514.7": { desc: "Geometria diferencial" } } },
-                        "515.1": { desc: "Topologia" },
-                        "517": { desc: "Análise matemática", children: { "517.9": { desc: "Equações diferenciais. Equações integrais" } } },
-                        "519.1": { desc: "Análise combinatória. Teoria dos grafos" },
-                        "519.2": { desc: "Probabilidade. Estatística matemática" },
-                        "519.6": { desc: "Matemática computacional. Análise numérica" },
-                        "519.7": { desc: "Cibernética matemática" },
-                        "519.8": {
-                            desc: "Teorias e métodos de investigação operacional matemática",
-                            children: {
-                                "519.83": { desc: "Teoria dos jogos" },
-                                "519.85": { desc: "Programação matemática" }
-                            }
-                        }
-                    }
-                },
-                "52": {
-                    desc: "Astronomia. Astrofísica. Geodésia",
-                    children: {
-                        "520": { desc: "Instrumentos e técnicas astronómicas" },
-                        "521": { desc: "Astronomia teórica. Mecânica celeste", children: { "521.9": { desc: "Astrometria. Astronomia esférica" } } },
-                        "523": {
-                            desc: "O sistema solar",
-                            children: {
-                                "523.3": { desc: "Sistema Terra-Lua" },
-                                "523.4": { desc: "Planetas e seus satélites. Planetologia" },
-                                "523.6": { desc: "Meio interplanetário. Cometas. Meteoros" },
-                                "523.9": { desc: "O Sol. Física solar" }
-                            }
-                        },
-                        "524": {
-                            desc: "Estrelas. Sistemas estelares. O Universo",
-                            children: {
-                                "524.1": { desc: "Raios cósmicos" },
-                                "524.3": { desc: "Estrelas" },
-                                "524.4": { desc: "Aglomerados de estrelas. Associações de estrelas" },
-                                "524.5": { desc: "Meio interestelar. Nebulosas galácticas" },
-                                "524.6": { desc: "A Galáxia (Via Láctea)" },
-                                "524.7": { desc: "Sistemas extragalácticos" },
-                                "524.8": { desc: "O Universo. Metagaláxia. Cosmologia" }
-                            }
-                        },
-                        "528": {
-                            desc: "Geodésia. Levantamento. Fotogrametria. Cartografia",
-                            children: {
-                                "528.1": { desc: "Teoria dos erros e da correcção na geodésia" },
-                                "528.2": { desc: "Forma da Terra. Medição da Terra" },
-                                "528.3": { desc: "Levantamento geodésico" },
-                                "528.4": { desc: "Levantamentos de campo. Topografia" },
-                                "528.5": { desc: "Instrumentos e equipamentos geodésicos" },
-                                "528.7": { desc: "Fotogrametria: aérea, terrestre" },
-                                "528.8": { desc: "Captação remota de dados" },
-                                "528.9": { desc: "Cartografia" }
-                            }
-                        }
-                    }
-                },
-                "53": {
-                    desc: "Física",
-                    children: {
-                        "53.01": { desc: "Teoria e natureza dos fenómenos" },
-                        "53.02": { desc: "Leis gerais dos fenómenos" },
-                        "53.03": { desc: "Produção e causas dos fenómenos" },
-                        "53.04": { desc: "Efeitos dos fenómenos" },
-                        "53.05": { desc: "Observação e registo dos fenómenos" },
-                        "53.06": { desc: "Aplicação, utilização dos fenómenos" },
-                        "53.07": { desc: "Aparelhos para produção e estudo dos fenómenos" },
-                        "53.08": { desc: "Princípios gerais e teoria da medição" },
-                        "53.09": { desc: "Dependência de fenómenos relativos a determinados efeitos" },
-                        "531": {
-                            desc: "Mecânica em geral. Mecânica dos corpos sólidos",
-                            children: {
-                                "531.1": { desc: "Cinemática" },
-                                "531.2": { desc: "Estática. Forças. Equilíbrio" },
-                                "531.3": { desc: "Dinâmica. Cinética" },
-                                "531.4": { desc: "Trabalho. Peso. Massa. Fricção" },
-                                "531.5": { desc: "Gravidade. Gravitação. Pêndulos. Balística" },
-                                "531.6": { desc: "Energia mecânica" },
-                                "531.7": { desc: "Medição de quantidades geométricas e mecânicas" },
-                                "531.8": { desc: "Teoria das máquinas. Mecânica técnica" }
-                            }
-                        },
-                        "532": {
-                            desc: "Mecânica dos fluídos em geral. Hidromecânica",
-                            children: {
-                                "532.1": { desc: "Hidrostática em geral" },
-                                "532.2": { desc: "Equilíbrio dos líquidos" },
-                                "532.3": { desc: "Corpos imersos. Corpos flutuantes" },
-                                "532.5": { desc: "Movimentos dos líquidos. Hidrodinâmica" },
-                                "532.6": { desc: "Fenómenos de superfície. Tensão superficial" },
-                                "532.7": { desc: "Teoria cinética dos líquidos. Osmose" }
-                            }
-                        },
-                        "533": {
-                            desc: "Mecânica dos gases. Aeromecânica. Física do plasma",
-                            children: {
-                                "533.1": { desc: "Propriedades dos gases" },
-                                "533.2": { desc: "Elasticidade. Compressibilidade. Liquefacção" },
-                                "533.5": { desc: "Gases rarefeitos. Física do vácuo" },
-                                "533.6": { desc: "Aerodinâmica" },
-                                "533.7": { desc: "Teoria cinética dos gases" },
-                                "533.9": { desc: "Física do plasma" }
-                            }
-                        },
-                        "534": {
-                            desc: "Vibrações. Ondas. Acústica",
-                            children: {
-                                "534.1": { desc: "Vibração de corpos" },
-                                "534.2": { desc: "Propagação das vibrações" },
-                                "534.3": { desc: "Sons e percepção musical" },
-                                "534.4": { desc: "Análise e síntese de sons" },
-                                "534.5": { desc: "Composição das vibrações" },
-                                "534.6": { desc: "Medições acústicas" },
-                                "534.7": { desc: "Acústica fisiológica. Acústica médica" },
-                                "534.8": { desc: "Aplicações da acústica" }
-                            }
-                        },
-                        "535": {
-                            desc: "Óptica",
-                            children: {
-                                "535.1": { desc: "Teoria da luz" },
-                                "535.2": { desc: "Propagação e energética da radiação. Fotometria" },
-                                "535.3": { desc: "Propagação. Reflexão. Refracção" },
-                                "535.4": { desc: "Interferência. Difracção" },
-                                "535.5": { desc: "Polarização. Dupla Refracção" },
-                                "535.6": { desc: "Cores e suas propriedades. Teoria da cor" },
-                                "535.8": { desc: "Aplicações da óptica em geral" }
-                            }
-                        },
-                        "536": {
-                            desc: "Calor. Termodinâmica",
-                            children: {
-                                "536.1": { desc: "Teoria geral do calor" },
-                                "536.2": { desc: "Condução de calor. Transferência de calor" },
-                                "536.3": { desc: "Efeito dos corpos sobre a radiação térmica" },
-                                "536.4": { desc: "Efeito da entrada de calor e da temperatura" },
-                                "536.5": { desc: "Temperatura. Medição de temperatura" },
-                                "536.6": { desc: "Calorimetria" },
-                                "536.7": { desc: "Termodinâmica. Energética" }
-                            }
-                        },
-                        "537": {
-                            desc: "Electricidade. Magnetismo. Electromagnetismo",
-                            children: {
-                                "537.2": { desc: "Electricidade estática. Electroestática" },
-                                "537.3": { desc: "Electricidade de corrente. Corrente eléctrica" },
-                                "537.5": { desc: "Fenómenos do electrão e do ião" },
-                                "537.6": { desc: "Magnetismo" },
-                                "537.8": { desc: "Electromagnetismo. Electrodinâmica" }
-                            }
-                        },
-                        "538.9": { desc: "Física da matéria condensada. Física do estado sólido" },
-                        "539": {
-                            desc: "Natureza física da matéria",
-                            children: {
-                                "539.1": { desc: "Física nuclear. Física atómica. Física molecular" },
-                                "539.2": { desc: "Propriedades e estruturas dos sistemas moleculares" },
-                                "539.3": { desc: "Elasticidade. Deformação. Mecânica de sólidos elásticos" },
-                                "539.4": { desc: "Força. Resistência à tensão" },
-                                "539.5": { desc: "Propriedades dos materiais que afectam a deformabilidade" },
-                                "539.6": { desc: "Forças intermoleculares" },
-                                "539.8": { desc: "Outros efeitos físico-mecânicos" }
-                            }
-                        }
-                    }
-                },
-                "54": {
-                    desc: "Química. Cristalografia. Mineralogia",
-                    children: {
-                        "542": {
-                            desc: "Química prática de laboratório",
-                            children: {
-                                "542.1": { desc: "Laboratórios químicos" },
-                                "542.2": { desc: "Aparelhos e técnicas de laboratório em geral" },
-                                "542.3": { desc: "Medição de peso, massa, volume" },
-                                "542.4": { desc: "Aplicação de calor e frio" },
-                                "542.5": { desc: "Uso de chamas" },
-                                "542.6": { desc: "Trabalho com líquidos" },
-                                "542.7": { desc: "Trabalhos com gases" },
-                                "542.8": { desc: "Operações físicas, físico-químicas e eléctricas" },
-                                "542.9": { desc: "Reacções químicas" }
-                            }
-                        },
-                        "543": {
-                            desc: "Química analítica",
-                            children: {
-                                "543.2": { desc: "Métodos químicos de análise" },
-                                "543.3": { desc: "Amostragem e análise da água" },
-                                "543.4": { desc: "Métodos de análise espectral" },
-                                "543.5": { desc: "Métodos físico-químicos de análise" },
-                                "543.6": { desc: "Análise de diferentes substâncias" },
-                                "543.9": { desc: "Análise por reacções biológicas e bioquímicas" }
-                            }
-                        },
-                        "544": {
-                            desc: "Química física",
-                            children: {
-                                "544.1": { desc: "Estrutura química da matéria" },
-                                "544.2": { desc: "Química física dos sólidos, dos líquidos e dos gases" },
-                                "544.3": { desc: "Termodinâmica química" },
-                                "544.4": { desc: "Cinética química. Catálise" },
-                                "544.5": { desc: "Química dos processos de alta energia" },
-                                "544.6": { desc: "Electroquímica" },
-                                "544.7": { desc: "Química dos fenómenos de superfície e colóides" }
-                            }
-                        },
-                        "546": {
-                            desc: "Química inorgânica",
-                            children: {
-                                "546.1": { desc: "Não metais e metalóides em geral" },
-                                "546.3": { desc: "Metais em geral" }
-                            }
-                        },
-                        "547": {
-                            desc: "Química orgânica",
-                            children: {
-                                "547.1": { desc: "Classificação dos compostos orgânicos" }
-                            }
-                        },
-                        "548": {
-                            desc: "Cristalografia",
-                            children: {
-                                "548.1": { desc: "Cristalografia matemática" },
-                                "548.2": { desc: "Crescimento do cristal" },
-                                "548.3": { desc: "Química dos cristais" },
-                                "548.4": { desc: "Irregularidades nos cristais" },
-                                "548.5": { desc: "Formação, crescimento e dissolução dos cristais" },
-                                "548.7": { desc: "Estrutura fina dos cristais" }
-                            }
-                        },
-                        "549": {
-                            desc: "Mineralogia",
-                            children: {
-                                "549.2": { desc: "Elementos e ligas naturais" },
-                                "549.3": { desc: "Sulfetos. Sulfossais" },
-                                "549.4": { desc: "Haletos. Halóides" },
-                                "549.5": { desc: "Compostos de oxigénio" },
-                                "549.6": { desc: "Silicatos. Titanatos. Zirconatos" },
-                                "549.7": { desc: "Outros compostos de oxiácidos" },
-                                "549.8": { desc: "Minerais orgânicos" }
-                            }
-                        }
-                    }
-                },
-                "55": {
-                    desc: "Ciências da terra. Geologia",
-                    children: {
-                        "550": {
-                            desc: "Ciências auxiliares da geologia",
-                            children: {
-                                "550.1": { desc: "Fisiografia" },
-                                "550.2": { desc: "Geoastronomia. Cosmogonia" },
-                                "550.3": { desc: "Geofísica" },
-                                "550.4": { desc: "Geoquímica" },
-                                "550.7": { desc: "Geobiologia" },
-                                "550.8": { desc: "Geologia e geofísica aplicada. Prospecção" },
-                                "550.93": { desc: "Geocronologia. Datação geológica" }
-                            }
-                        },
-                        "551": {
-                            desc: "Geologia geral. Meteorologia. Climatologia",
-                            children: {
-                                "551.1": { desc: "Estrutura geral da Terra" },
-                                "551.2": {
-                                    desc: "Geodinâmica interna (processos endógenos)",
-                                    children: {
-                                        "551.21": { desc: "Vulcanicidade. Vulcanismo" },
-                                        "551.24": { desc: "Geotectónica" }
-                                    }
-                                },
-                                "551.3": {
-                                    desc: "Geodinâmica externa (processos exógenos)",
-                                    children: {
-                                        "551.32": { desc: "Glaciologia" }
-                                    }
-                                },
-                                "551.4": {
-                                    desc: "Geomorfologia",
-                                    children: {
-                                        "551.44": { desc: "Espeleologia. Cavernas" },
-                                        "551.46": { desc: "Oceanografia física" }
-                                    }
-                                },
-                                "551.58": { desc: "Climatologia" },
-                                "551.7": { desc: "Geologia histórica. Estratigrafia" },
-                                "551.8": { desc: "Paleogeografia" }
-                            }
-                        },
-                        "552": {
-                            desc: "Petrologia. Petrografia",
-                            children: {
-                                "552.1": { desc: "Características e propriedades em geral das rochas" },
-                                "552.3": { desc: "Rochas magmáticas. Rochas ígneas" },
-                                "552.4": { desc: "Rochas metamórficas" },
-                                "552.5": { desc: "Rochas sedimentares" },
-                                "552.6": { desc: "Meteoritos" }
-                            }
-                        },
-                        "553": {
-                            desc: "Geologia económica. Depósitos minerais",
-                            children: {
-                                "553.2": { desc: "Formação do minério" },
-                                "553.3": { desc: "Depósitos de minério em geral" },
-                                "553.4": { desc: "Outros depósitos de minérios" },
-                                "553.5": { desc: "Depósitos de pedra natural" },
-                                "553.6": { desc: "Depósitos de vários minerais e terras inorgânicas" },
-                                "553.7": { desc: "Fontes minerais" },
-                                "553.8": { desc: "Depósitos de pedras preciosas e semipreciosas" },
-                                "553.9": { desc: "Depósitos de rochas carbonáceas" }
-                            }
-                        },
-                        "556": {
-                            desc: "Hidrosfera. Hidrologia",
-                            children: {
-                                "556.3": { desc: "Hidrologia das águas subterrâneas. Hidrogeologia" },
-                                "556.5": { desc: "Hidrologia da água de superfície" }
-                            }
-                        }
-                    }
-                },
-                "56": { desc: "Paleontologia" },
-                "57": {
-                    desc: "Ciências biológicas em geral",
-                    children: {
-                        "57.01": { desc: "Leis gerais. Aspectos teóricos" },
-                        "57.02": { desc: "Processos biológicos e etológicos" },
-                        "57.03": { desc: "Padrão das variações de propriedade" },
-                        "57.04": { desc: "Factores. Influências" },
-                        "57.05": { desc: "Características dependentes do controlo central" },
-                        "57.06": { desc: "Nomenclatura e classificação de organismos" },
-                        "57.07": { desc: "Paleontologia analítica" },
-                        "57.08": { desc: "Técnicas biológicas. Métodos experimentais" },
-                        "572": {
-                            desc: "Antropologia física",
-                            children: {
-                                "572.1": { desc: "Antropogenia. Origem da espécie humana" },
-                                "572.9": { desc: "Antropogeografia especial" }
-                            }
-                        },
-                        "573": { desc: "Biologia geral e teórica" },
-                        "574": { desc: "Ecologia geral e biodiversidade" },
-                        "575": { desc: "Genética geral" },
-                        "576": { desc: "Biologia celular e subcelular. Citologia" },
-                        "577": { desc: "Bases materiais da vida. Bioquímica. Biofísica" },
-                        "578": { desc: "Virologia" },
-                        "579": {
-                            desc: "Microbiologia",
-                            children: {
-                                "579.2": { desc: "Microbiologia geral" },
-                                "579.6": { desc: "Microbiologia aplicada" },
-                                "579.8": { desc: "Microrganismos. Bactéria" }
-                            }
-                        }
-                    }
-                },
-                "58": {
-                    desc: "Botânica",
-                    children: {
-                        "581": {
-                            desc: "Botânica geral",
-                            children: {
-                                "581.1": { desc: "Fisiologia vegetal" },
-                                "581.2": { desc: "Doenças das plantas. Fitopatologia" },
-                                "581.3": { desc: "Embriologia vegetal" },
-                                "581.4": { desc: "Morfologia vegetal. Anatomia vegetal" },
-                                "581.5": { desc: "Hábitos das plantas. Ecologia vegetal" },
-                                "581.6": { desc: "Botânica aplicada. Uso de plantas" },
-                                "581.8": { desc: "Histologia vegetal" },
-                                "581.9": { desc: "Botânica geográfica" }
-                            }
-                        },
-                        "582": {
-                            desc: "Botânica sistemática",
-                            children: {
-                                "582.091": { desc: "Árvores" },
-                                "582.093": { desc: "Arbustos" },
-                                "582.095": { desc: "Crescimento subterrâneo" },
-                                "582.097": { desc: "Plantas trepadoras lenhosas" },
-                                "582.099": { desc: "Plantas herbáceas ou não-lenhosas" },
-                                "582.23": { desc: "Bacteria" },
-                                "582.24": { desc: "Protista. Chromista" },
-                                "582.261": { desc: "Algae (algas)" },
-                                "582.28": { desc: "Fungos" },
-                                "582.29": { desc: "Líquenes" },
-                                "582.32": { desc: "Bryophyta (briófitas)" },
-                                "582.361": { desc: "Tracheophyta (plantas vasculares)" },
-                                "582.37": { desc: "Pteridophyta (pteridófitos). Fetos" },
-                                "582.4": {
-                                    desc: "Spermatophyta (plantas com semente)",
-                                    children: {
-                                        "582.42": { desc: "Gymnosperms (gimnospermas)" },
-                                        "582.44": { desc: "Cycadophyta (cicadófita)" },
-                                        "582.46": { desc: "Ginkgophyta" },
-                                        "582.47": { desc: "Pinophyta / Coniferae (coníferas)" }
-                                    }
-                                },
-                                "582.5": {
-                                    desc: "Magnoliophyta (angiospermes)",
-                                    children: {
-                                        "582.51": { desc: "Arecales (palmeira). Pandanales" },
-                                        "582.53": { desc: "Alismatales" },
-                                        "582.54": { desc: "Poales" },
-                                        "582.56": { desc: "Zingiberales" },
-                                        "582.57": { desc: "Liliales" },
-                                        "582.58": { desc: "Asparagales" }
-                                    }
-                                },
-                                "582.6": {
-                                    desc: "Dicotyledoneae (dicotiledóneas)",
-                                    children: {
-                                        "582.62": { desc: "Fagales" },
-                                        "582.63": { desc: "Rosales" },
-                                        "582.65": { desc: "Nymphaeales" },
-                                        "582.66": { desc: "Caryophyllales" },
-                                        "582.67": { desc: "Magnoliids" },
-                                        "582.68": { desc: "Dilleniidae" }
-                                    }
-                                },
-                                "582.7": { desc: "Rosidae" },
-                                "582.82": { desc: "Vitales" },
-                                "582.9": { desc: "Asteridae" }
-                            }
-                        }
-                    }
-                },
-                "59": {
-                    desc: "Zoologia",
-                    children: {
-                        "591": {
-                            desc: "Zoologia geral",
-                            children: {
-                                "591.1": { desc: "Fisiologia animal" },
-                                "591.2": { desc: "Doenças de animais" },
-                                "591.3": { desc: "Embriologia animal" },
-                                "591.4": { desc: "Anatomia animal" },
-                                "591.5": { desc: "Hábitos animais. Ecologia. Etologia" },
-                                "591.6": { desc: "Zoologia económica. Zoologia aplicada" },
-                                "591.8": { desc: "Histologia animal" },
-                                "591.9": { desc: "Zoologia geográfica. Fauna" }
-                            }
-                        },
-                        "592": { desc: "Invertebrata. Invertebrados em geral" },
-                        "593.1": { desc: "Protozoários" },
-                        "593.4": { desc: "Poríferos (esponjas)" },
-                        "594": { desc: "Moluscos. Briozoários. Braquiópodes" },
-                        "595": {
-                            desc: "Articulata",
-                            children: {
-                                "595.7": { desc: "Insecta. Insectos. Entomologia" }
-                            }
-                        },
-                        "596": {
-                            desc: "Chordata. Cordados",
-                            children: {
-                                "596.2": { desc: "Urocordados (tunicados)" }
-                            }
-                        },
-                        "597": {
-                            desc: "Vertebrata. Vertebrados. Pisces. Peixes",
-                            children: {
-                                "597.3": { desc: "Peixes cartilaginosos" },
-                                "597.4": { desc: "Osteichthyes (peixes ósseos)" },
-                                "597.6": { desc: "Amphibia. Anfíbios" }
-                            }
-                        },
-                        "598": {
-                            desc: "Sauropsídeos",
-                            children: {
-                                "598.1": { desc: "Reptilia. Répteis" },
-                                "598.2": { desc: "Aves. Ornitologia" }
-                            }
-                        },
-                        "599": {
-                            desc: "Mammalia (mamíferos)",
-                            children: {
-                                "599.1": { desc: "Prototheria" },
-                                "599.2": { desc: "Metatheria. Marsupiais" },
-                                "599.3": {
-                                    desc: "Eutheria (mamíferos placentários)",
-                                    children: {
-                                        "599.31": { desc: "Pholidota" },
-                                        "599.32": { desc: "Rodentia (roedores)" },
-                                        "599.35": { desc: "Insectivora (insectívoros)" }
-                                    }
-                                },
-                                "599.4": { desc: "Chiroptera (morcegos)" },
-                                "599.5": { desc: "Cetáceos" },
-                                "599.61": { desc: "Proboscidea (elefantes)" },
-                                "599.72": { desc: "Perissodactyla (ungulados de dedos ímpares)" },
-                                "599.73": { desc: "Artiodactyla (ungulados de dedos pares)" },
-                                "599.74": { desc: "Carnivora (carnívoros)" },
-                                "599.8": { desc: "Primates (primatas)" }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "6": {
-            desc: "Ciências aplicadas. Medicina. Tecnologia",
-            children: {
-                "60": {
-                    desc: "Biotecnologia",
-                    children: {
-                        "601": { desc: "Conceitos fundamentais" },
-                        "602": { desc: "Processos e técnicas em biotecnologia" },
-                        "604": { desc: "Produtos biotecnológicos" },
-                        "606": { desc: "Aplicações da biotecnologia" },
-                        "608": { desc: "Problemas em biotecnologia" }
-                    }
-                },
-                "61": {
-                    desc: "Ciências médicas",
-                    children: {
-                        "611": { desc: "Anatomia. Anatomia humana" },
-                        "612": {
-                            desc: "Fisiologia. Fisiologia humana",
-                            children: {
-                                "612.1": { desc: "Sangue. Sistema cardiovascular" },
-                                "612.2": { desc: "Respiração. Sistema respiratório" },
-                                "612.3": { desc: "Alimentação. Digestão" },
-                                "612.4": { desc: "Sistema glandular" },
-                                "612.5": { desc: "Calor animal" },
-                                "612.6": { desc: "Reprodução. Crescimento" },
-                                "612.7": { desc: "Funções motoras" },
-                                "612.8": { desc: "Sistema nervoso. Órgãos sensoriais" }
-                            }
-                        },
-                        "613": {
-                            desc: "Higiene em geral. Saúde pessoal",
-                            children: {
-                                "613.2": { desc: "Dietética" },
-                                "613.4": { desc: "Higiene pessoal" },
-                                "613.6": { desc: "Saúde ocupacional" },
-                                "613.7": { desc: "Saúde e higiene dos tempos livres" },
-                                "613.8": { desc: "Saúde e higiene do sistema nervoso" }
-                            }
-                        },
-                        "614": {
-                            desc: "Saúde e higiene públicas",
-                            children: {
-                                "614.2": { desc: "Organização pública e profissional da saúde" },
-                                "614.4": { desc: "Controlo e prevenção de doenças transmissíveis" },
-                                "614.7": { desc: "Higiene do ar, água, solo. Poluição" },
-                                "614.8": { desc: "Acidentes. Segurança" },
-                                "614.9": { desc: "Saúde dos animais" }
-                            }
-                        },
-                        "615": {
-                            desc: "Farmacologia. Terapêutica. Toxicologia",
-                            children: {
-                                "615.1": { desc: "Farmácia geral e profissional" },
-                                "615.8": { desc: "Fisioterapia. Radioterapia" }
-                            }
-                        },
-                        "616": {
-                            desc: "Patologia. Medicina clínica",
-                            children: {
-                                "616-001": { desc: "Traumatismos. Feridas" },
-                                "616-002": { desc: "Inflamação" },
-                                "616-006": { desc: "Tumores. Oncologia" },
-                                "616-007": { desc: "Malformações" },
-                                "616-009": { desc: "Distúrbios nervosos" },
-                                "616-05": { desc: "Pessoas e características pessoais em patologia" },
-                                "616-07": { desc: "Semiologia. Diagnóstico" },
-                                "616-08": { desc: "Tratamento" },
-                                "616.1": { desc: "Patologia do sistema circulatório" },
-                                "616.2": { desc: "Patologia do sistema respiratório" },
-                                "616.3": {
-                                    desc: "Patologia do sistema digestivo",
-                                    children: {
-                                        "616.31": { desc: "Estomatologia. Doenças da boca e dos dentes" }
-                                    }
-                                },
-                                "616.5": { desc: "Dermatologia clínica. Doenças cutâneas" },
-                                "616.6": { desc: "Patologias do sistema urogenital" },
-                                "616.7": { desc: "Patologia dos órgãos da locomoção" },
-                                "616.8": { desc: "Neurologia. Psiquiatria" },
-                                "616.9": { desc: "Doenças transmissíveis. Doenças infecciosas" }
-                            }
-                        },
-                        "617": { desc: "Cirurgia. Ortopedia. Oftalmologia" },
-                        "618": { desc: "Ginecologia. Obstetrícia" }
-                    }
-                },
-                "62": {
-                    desc: "Engenharia. Tecnologia em geral",
-                    children: {
-                        "620": {
-                            desc: "Testes dos materiais. Economia de energia",
-                            children: {
-                                "620.3": { desc: "Nanotecnologia" }
-                            }
-                        },
-                        "621": {
-                            desc: "Engenharia mecânica em geral. Engenharia eléctrica",
-                            children: {
-                                "621.1": { desc: "Máquinas térmicas. Máquinas a vapor" },
-                                "621.22": { desc: "Energia hidráulica" },
-                                "621.3": { desc: "Engenharia eléctrica" },
-                                "621.4": { desc: "Motores térmicos" },
-                                "621.5": { desc: "Energia pneumática. Refrigeração" },
-                                "621.6": { desc: "Manipulação e distribuição de fluidos" },
-                                "621.7": { desc: "Tecnologia mecânica em geral" },
-                                "621.8": { desc: "Elementos das máquinas" },
-                                "621.9": { desc: "Trabalho à máquina" }
-                            }
-                        },
-                        "622": {
-                            desc: "Mineração",
-                            children: {
-                                "622.1": { desc: "Estudo e levantamento da mina" },
-                                "622.2": { desc: "Operações de mineração" },
-                                "622.3": { desc: "Mineração de minerais específicos" },
-                                "622.7": { desc: "Processamento de minerais" }
-                            }
-                        },
-                        "623": {
-                            desc: "Engenharia militar",
-                            children: {
-                                "623.1": { desc: "Fortificações" },
-                                "623.4": { desc: "Armamentos. Material militar" },
-                                "623.7": { desc: "Aviação militar e naval" },
-                                "623.8": { desc: "Engenharia naval. Construção naval" }
-                            }
-                        },
-                        "624": {
-                            desc: "Engenharia civil e de estruturas em geral",
-                            children: {
-                                "624.01": { desc: "Estruturas segundo o material" },
-                                "624.1": { desc: "Terraplanagem. Fundações. Túneis" },
-                                "624.21": { desc: "Construção de pontes" }
-                            }
-                        },
-                        "625": {
-                            desc: "Engenharia do transporte terrestre",
-                            children: {
-                                "625.1": { desc: "Ferrovias em geral" },
-                                "625.7": { desc: "Rodovias em geral. Estradas" }
-                            }
-                        },
-                        "626": { desc: "Engenharia hidráulica em geral" },
-                        "627": {
-                            desc: "Engenharia de cursos de água naturais. Portos",
-                            children: {
-                                "627.8": { desc: "Represas. Centrais hidroeléctricas" }
-                            }
-                        },
-                        "628": {
-                            desc: "Engenharia de saúde pública. Saneamento",
-                            children: {
-                                "628.1": { desc: "Abastecimento de água" },
-                                "628.2": { desc: "Drenagem urbana. Esgotos" },
-                                "628.4": { desc: "Higiene urbana. Resíduos. Lixo" },
-                                "628.9": { desc: "Iluminação" }
-                            }
-                        },
-                        "629": {
-                            desc: "Engenharia de veículos de transporte",
-                            children: {
-                                "629.3": { desc: "Engenharia de veículos terrestres" },
-                                "629.4": { desc: "Engenharia de veículos ferroviários" },
-                                "629.5": { desc: "Engenharia naval. Construção de navios" },
-                                "629.7": { desc: "Engenharia de transportes aéreo e espacial. Aeronáutica" }
-                            }
-                        }
-                    }
-                },
-                "63": {
-                    desc: "Agricultura. Ciências agrárias",
-                    children: {
-                        "630": { desc: "Silvicultura. Florestas" },
-                        "631": {
-                            desc: "Agricultura em geral. Agronomia",
-                            children: {
-                                "631.1": { desc: "Gestão de propriedades agrícolas" },
-                                "631.3": { desc: "Máquinas e equipamento agrícola" },
-                                "631.4": { desc: "Ciências do solo. Pedologia" },
-                                "631.8": { desc: "Fertilizantes" }
-                            }
-                        },
-                        "632": { desc: "Doenças das plantas. Pragas" },
-                        "633": {
-                            desc: "Culturas e sua produção",
-                            children: {
-                                "633.1": { desc: "Cereais" }
-                            }
-                        },
-                        "634": {
-                            desc: "Fruticultura",
-                            children: {
-                                "634.8": { desc: "Viticultura" }
-                            }
-                        },
-                        "635": { desc: "Horticultura. Jardinagem" },
-                        "636": {
-                            desc: "Criação de animais. Pecuária",
-                            children: {
-                                "636.09": { desc: "Medicina veterinária" }
-                            }
-                        },
-                        "637": { desc: "Produtos de animais domésticos" },
-                        "639": { desc: "Caça. Pesca. Piscicultura" }
-                    }
-                },
-                "64": {
-                    desc: "Economia doméstica",
-                    children: {
-                        "641": { desc: "Alimentos. Culinária" },
-                        "643": { desc: "A casa. A residência" },
-                        "646": { desc: "Roupa. Cuidado com o corpo" }
-                    }
-                },
-                "65": {
-                    desc: "Indústrias da comunicação e dos transportes. Contabilidade",
-                    children: {
-                        "654": { desc: "Telecomunicação" },
-                        "655": { desc: "Indústrias gráficas. Edição" },
-                        "656": { desc: "Serviços de transporte. Tráfego" },
-                        "657": { desc: "Contabilidade" },
-                        "658": {
-                            desc: "Gestão, administração de empresas",
-                            children: {
-                                "658.3": { desc: "Recursos humanos" },
-                                "658.8": { desc: "Marketing. Vendas" }
-                            }
-                        },
-                        "659": { desc: "Publicidade. Relações públicas" }
-                    }
-                },
-                "66": {
-                    desc: "Tecnologia química",
-                    children: {
-                        "661": { desc: "Químicos" },
-                        "662": { desc: "Explosivos. Combustíveis" },
-                        "663": {
-                            desc: "Microbiologia industrial. Bebidas",
-                            children: {
-                                "663.2": { desc: "Vinhos. Enologia" }
-                            }
-                        },
-                        "664": { desc: "Produção de alimentos" },
-                        "665": { desc: "Óleos. Gorduras. Ceras. Petróleo" },
-                        "666": { desc: "Indústria do vidro. Cerâmica. Cimento" },
-                        "667": { desc: "Indústrias de corantes. Tintas" },
-                        "669": { desc: "Metalurgia. Siderurgia" }
-                    }
-                },
-                "67": {
-                    desc: "Indústria, artes industriais e ofícios diversos",
-                    children: {
-                        "671": { desc: "Metais preciosos. Joalharia" },
-                        "672": { desc: "Artigos de ferro e aço" },
-                        "674": { desc: "Indústria da madeira" },
-                        "675": { desc: "Indústria do couro" },
-                        "676": { desc: "Indústria do papel" },
-                        "677": { desc: "Indústria têxtil" },
-                        "678": { desc: "Borracha. Plásticos" }
-                    }
-                },
-                "68": {
-                    desc: "Indústrias de artigos acabados ou montados",
-                    children: {
-                        "681": {
-                            desc: "Mecanismos e instrumentos de precisão",
-                            children: {
-                                "681.5": { desc: "Engenharia de controle automático" },
-                                "681.6": { desc: "Máquinas de reprodução gráfica" }
-                            }
-                        },
-                        "687": { desc: "Indústria do vestuário" }
-                    }
-                },
-                "69": {
-                    desc: "Indústria da construção",
-                    children: {
-                        "691": { desc: "Materiais de construção" }
-                    }
-                }
-            }
-        },
-        "7": {
-            desc: "Arte. Recreação. Desporto",
-            children: {
-                "7.01": { desc: "Teoria e filosofia da arte" },
-                "7.03": { desc: "Períodos e fases artísticas. Estilos" },
-                "71": {
-                    desc: "Planeamento territorial. Urbanismo",
-                    children: {
-                        "711": { desc: "Planeamento regional, urbano e rural" },
-                        "712": { desc: "Planeamento da paisagem. Parques. Jardins" }
-                    }
-                },
-                "72": {
-                    desc: "Arquitectura",
-                    children: {
-                        "721": { desc: "Edifícios em geral" },
-                        "725": { desc: "Edifícios públicos, comerciais e industriais" },
-                        "726": { desc: "Arquitectura religiosa" },
-                        "728": { desc: "Arquitectura da habitação" }
-                    }
-                },
-                "73": {
-                    desc: "Artes plásticas. Escultura",
-                    children: {
-                        "737": { desc: "Numismática" },
-                        "738": { desc: "Cerâmica artística" },
-                        "739": { desc: "Arte do metal. Ourivesaria" }
-                    }
-                },
-                "74": {
-                    desc: "Desenho. Design. Artes aplicadas",
-                    children: {
-                        "741": { desc: "Desenho em geral" },
-                        "744": { desc: "Desenho técnico" },
-                        "745": { desc: "Artes decorativas, artesanato" }
-                    }
-                },
-                "75": { desc: "Pintura" },
-                "76": { desc: "Artes gráficas. Gravura" },
-                "77": { desc: "Fotografia" },
-                "78": {
-                    desc: "Música",
-                    children: {
-                        "78.01": { desc: "Teoria e filosofia da música" },
-                        "782": { desc: "Música dramática. Ópera" },
-                        "784": { desc: "Música vocal" },
-                        "785": { desc: "Música instrumental" }
-                    }
-                },
-                "79": {
-                    desc: "Divertimentos. Espectáculos. Jogos. Desportos",
-                    children: {
-                        "791": { desc: "Cinema. Filmes" },
-                        "792": { desc: "Teatro" },
-                        "793": { desc: "Divertimentos sociais. Dança" },
-                        "794": { desc: "Jogos de mesa. Xadrez" },
-                        "796": {
-                            desc: "Desporto. Jogos. Exercícios físicos",
-                            children: {
-                                "796.3": { desc: "Jogos de bola" },
-                                "796.4": { desc: "Ginástica. Atletismo" }
-                            }
-                        },
-                        "797": { desc: "Desportos aquáticos e aéreos" },
-                        "798": { desc: "Equitação e hipismo" },
-                        "799": { desc: "Pesca desportiva. Caça desportiva" }
-                    }
-                }
-            }
-        },
-        "8": {
-            desc: "Língua. Linguística. Literatura",
-            children: {
-                "80": {
-                    desc: "Filologia. Questões gerais",
-                    children: {
-                        "801": { desc: "Prosódia" },
-                        "808": { desc: "Retórica" }
-                    }
-                },
-                "81": {
-                    desc: "Linguística e línguas",
-                    children: {
-                        "811": {
-                            desc: "Línguas individuais",
-                            children: {
-                                "811.111": { desc: "Inglês" },
-                                "811.112.2": { desc: "Alemão" },
-                                "811.133.1": { desc: "Francês" },
-                                "811.134.2": { desc: "Espanhol" },
-                                "811.134.3": { desc: "Português" }
-                            }
-                        }
-                    }
-                },
-                "82": {
-                    desc: "Literatura",
-                    children: {
-                        "82-1": { desc: "Poesia" },
-                        "82-2": { desc: "Drama. Peças de teatro" },
-                        "82-3": { desc: "Ficção. Romance" },
-                        "821": {
-                            desc: "Literaturas de línguas individuais",
-                            children: {
-                                "821.134.3": { desc: "Literatura portuguesa" }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "9": {
-            desc: "Geografia. Biografia. História",
-            children: {
-                "902": { desc: "Arqueologia" },
-                "903": { desc: "Pré-história" },
-                "908": { desc: "Estudos regionais" },
-                "91": {
-                    desc: "Geografia. Exploração",
-                    children: {
-                        "911": { desc: "Geografia geral" },
-                        "912": { desc: "Mapas. Atlas" },
-                        "913": { desc: "Geografia regional" }
-                    }
-                },
-                "92": {
-                    desc: "Estudos biográficos. Genealogia",
-                    children: {
-                        "929": { desc: "Biografias", children: { "929.5": { desc: "Genealogia" }, "929.6": { desc: "Heráldica" }, "929.9": { desc: "Bandeiras" } } }
-                    }
-                },
-                "93": {
-                    desc: "História (ciência histórica)",
-                    children: {
-                        "930": { desc: "Ciência histórica. Arquivística" }
-                    }
-                },
-                "94": { desc: "História em geral" }
-            }
-        }
-    }
-};
+    // --- CLASSE 1 ---
+    { code: "1", desc: "Filosofia. Psicologia" },
+    { code: "101", desc: "Natureza da filosofia" },
+    { code: "11", desc: "Metafísica" },
+    { code: "111", desc: "Ontologia" },
+    { code: "13", desc: "Filosofia da mente" },
+    { code: "130.1", desc: "Conceitos gerais da mente" },
+    { code: "130.2", desc: "Filosofia da cultura" },
+    { code: "130.3", desc: "Metafísica da vida espiritual" },
+    { code: "133", desc: "Ocultismo. Paranormal" },
+    { code: "14", desc: "Sistemas filosóficos" },
+    { code: "140", desc: "Tipologia de sistemas" },
+    { code: "141", desc: "Pontos de vista filosóficos" },
+    { code: "159.9", desc: "Psicologia" },
+    { code: "159.91", desc: "Psicofisiologia" },
+    { code: "159.92", desc: "Desenvolvimento mental" },
+    { code: "159.93", desc: "Sensação e percepção" },
+    { code: "159.94", desc: "Funções executivas" },
+    { code: "159.942", desc: "Emoções e sentimentos" },
+    { code: "159.943", desc: "Conação e movimento" },
+    { code: "159.944", desc: "Trabalho e fadiga" },
+    { code: "159.946", desc: "Funções motoras especiais" },
+    { code: "159.947", desc: "Vontade" },
+    { code: "159.95", desc: "Processos mentais superiores" },
+    { code: "159.96", desc: "Estados mentais especiais" },
+    { code: "159.97", desc: "Psicopatologia" },
+    { code: "159.98", desc: "Psicologia aplicada" },
+    { code: "16", desc: "Lógica. Epistemologia" },
+    { code: "161", desc: "Fundamentos da lógica" },
+    { code: "164", desc: "Lógica simbólica" },
+    { code: "165", desc: "Teoria do conhecimento" },
+    { code: "17", desc: "Moral. Ética" },
+    { code: "171", desc: "Ética individual" },
+    { code: "172", desc: "Ética social" },
+    { code: "173", desc: "Ética familiar" },
+    { code: "176", desc: "Ética sexual" },
+    { code: "177", desc: "Ética e sociedade" },
+
+    // --- CLASSE 2 ---
+    { code: "2", desc: "Religião. Teologia" },
+    { code: "2-1", desc: "Teoria da religião" },
+    { code: "2-13", desc: "O Divino. O Sagrado" },
+    { code: "2-14", desc: "Deus. Deuses" },
+    { code: "2-15", desc: "Natureza de Deus" },
+    { code: "2-17", desc: "Cosmologia religiosa" },
+    { code: "2-18", desc: "Humanidade e religião" },
+    { code: "2-184", desc: "Relação Homem-Deus" },
+    { code: "2-2", desc: "Provas da religião. Escrituras" },
+    { code: "2-23", desc: "Livros sagrados" },
+    { code: "2-25", desc: "Literatura pseudocanónica" },
+    { code: "2-27", desc: "Obras críticas" },
+    { code: "2-28", desc: "Outros textos religiosos" },
+    { code: "2-3", desc: "Figuras religiosas" },
+    { code: "2-31", desc: "Fundadores da fé" },
+    { code: "2-32", desc: "Messias" },
+    { code: "2-34", desc: "Mártires" },
+    { code: "2-35", desc: "Ascetas e Eremitas" },
+    { code: "2-36", desc: "Santos" },
+    { code: "2-37", desc: "Gurus e Sábios" },
+    { code: "2-38", desc: "Carismáticos" },
+    { code: "2-4", desc: "Práticas religiosas" },
+    { code: "2-42", desc: "Comportamento moral" },
+    { code: "2-43", desc: "Costumes religiosos" },
+    { code: "2-46", desc: "Caridade e pastoral" },
+    { code: "2-47", desc: "Educação religiosa" },
+    { code: "2-475", desc: "Pregação" },
+    { code: "2-5", desc: "Culto e rituais" },
+    { code: "2-523", desc: "Edifícios religiosos" },
+    { code: "2-526", desc: "Objectos de culto" },
+    { code: "2-53", desc: "Adoração" },
+    { code: "2-54", desc: "Cerimónias" },
+    { code: "2-55", desc: "Sacramentos" },
+    { code: "2-56", desc: "Celebração" },
+    { code: "2-6", desc: "Processos religiosos" },
+    { code: "2-65", desc: "Religião comparada" },
+    { code: "2-67", desc: "Relações inter-religiosas" },
+    { code: "2-7", desc: "Organização religiosa" },
+    { code: "2-72", desc: "Estrutura religiosa" },
+    { code: "2-73", desc: "Governo religioso" },
+    { code: "2-74", desc: "Direito canónico" },
+    { code: "2-76", desc: "Missões" },
+    { code: "2-77", desc: "Hierarquia" },
+    { code: "2-78", desc: "Sociedades religiosas" },
+    { code: "2-84", desc: "Religião e Estado" },
+    { code: "2-87", desc: "Heresias" },
+    { code: "2-9", desc: "História da religião" },
+    { code: "21", desc: "Religiões pré-históricas" },
+    { code: "212", desc: "Religiões antigas" },
+    { code: "213", desc: "Religiões primitivas" },
+    { code: "22", desc: "Religiões do Extremo Oriente" },
+    { code: "221", desc: "Religiões da China" },
+    { code: "221.3", desc: "Taoismo" },
+    { code: "223", desc: "Religiões da Coreia" },
+    { code: "225", desc: "Religiões do Japão" },
+    { code: "23", desc: "Religiões da Índia" },
+    { code: "233", desc: "Hinduísmo" },
+    { code: "234", desc: "Jainismo" },
+    { code: "235", desc: "Sikhismo" },
+    { code: "24", desc: "Budismo" },
+    { code: "241", desc: "Budismo Hinayana" },
+    { code: "242", desc: "Budismo Mahayana" },
+    { code: "243", desc: "Lamaísmo" },
+    { code: "244", desc: "Budismo Japonês" },
+    { code: "25", desc: "Religiões da Antiguidade" },
+    { code: "251", desc: "Religião do Egipto" },
+    { code: "252", desc: "Religiões da Mesopotâmia" },
+    { code: "254", desc: "Religiões do Irão" },
+    { code: "255", desc: "Religiões Clássicas" },
+    { code: "257", desc: "Religiões Europeias antigas" },
+    { code: "258", desc: "Religiões Americanas antigas" },
+    { code: "26", desc: "Judaísmo" },
+    { code: "261", desc: "Judaísmo Bíblico" },
+    { code: "262", desc: "Judaísmo Asquenazita" },
+    { code: "264", desc: "Judaísmo Sefardita" },
+    { code: "265", desc: "Judaísmo Ortodoxo" },
+    { code: "266", desc: "Judaísmo Progressista" },
+    { code: "267", desc: "Movimentos judaicos modernos" },
+    { code: "27", desc: "Cristianismo" },
+    { code: "271", desc: "Igrejas Orientais" },
+    { code: "272", desc: "Igreja Católica Romana" },
+    { code: "273", desc: "Igrejas Episcopais" },
+    { code: "274", desc: "Protestantismo" },
+    { code: "275", desc: "Igrejas Reformadas" },
+    { code: "276", desc: "Anabaptistas" },
+    { code: "277", desc: "Igrejas Livres" },
+    { code: "278", desc: "Outras igrejas protestantes" },
+    { code: "279", desc: "Outros movimentos cristãos" },
+    { code: "28", desc: "Islamismo" },
+    { code: "281", desc: "Sufismo" },
+    { code: "282", desc: "Sunismo" },
+    { code: "284", desc: "Xiismo" },
+    { code: "285", desc: "Babismo" },
+    { code: "286", desc: "Bahaísmo" },
+    { code: "29", desc: "Movimentos espirituais modernos" },
+
+    // --- CLASSE 3 ---
+    { code: "3", desc: "Ciências Sociais" },
+    { code: "303", desc: "Métodos das ciências sociais" },
+    { code: "304", desc: "Questões sociais" },
+    { code: "305", desc: "Estudos de género" },
+    { code: "308", desc: "Sociografia" },
+    { code: "311", desc: "Estatística" },
+    { code: "311.1", desc: "Fundamentos da estatística" },
+    { code: "311.2", desc: "Técnicas de pesquisa estatística" },
+    { code: "311.3", desc: "Estatísticas oficiais" },
+    { code: "311.4", desc: "Estatísticas privadas" },
+    { code: "314", desc: "Demografia" },
+    { code: "314.1", desc: "População" },
+    { code: "316", desc: "Sociologia" },
+    { code: "316.1", desc: "Âmbito da sociologia" },
+    { code: "316.2", desc: "Tendências sociológicas" },
+    { code: "316.3", desc: "Estrutura social" },
+    { code: "316.33", desc: "Subsistemas sociais" },
+    { code: "316.34", desc: "Estratificação social" },
+    { code: "316.35", desc: "Grupos sociais" },
+    { code: "316.36", desc: "Família e casamento" },
+    { code: "316.4", desc: "Processos sociais" },
+    { code: "316.6", desc: "Psicologia social" },
+    { code: "316.7", desc: "Sociologia da cultura" },
+    { code: "32", desc: "Política" },
+    { code: "321", desc: "Formas de organização política" },
+    { code: "322", desc: "Relações Igreja-Estado" },
+    { code: "323", desc: "Política interna" },
+    { code: "323.1", desc: "Movimentos nacionalistas" },
+    { code: "323.2", desc: "Relações Povo-Estado" },
+    { code: "323.4", desc: "Luta de classes" },
+    { code: "324", desc: "Eleições" },
+    { code: "325", desc: "Colonização" },
+    { code: "326", desc: "Escravatura" },
+    { code: "327", desc: "Relações internacionais" },
+    { code: "327.2", desc: "Imperialismo" },
+    { code: "327.3", desc: "Internacionalismo" },
+    { code: "327.5", desc: "Blocos internacionais" },
+    { code: "327.7", desc: "Organizações internacionais" },
+    { code: "327.8", desc: "Influência política" },
+    { code: "328", desc: "Parlamentos" },
+    { code: "329", desc: "Partidos políticos" },
+    { code: "33", desc: "Economia" },
+    { code: "330", desc: "Economia geral" },
+    { code: "330.1", desc: "Teoria económica" },
+    { code: "330.3", desc: "Dinâmica económica" },
+    { code: "330.4", desc: "Economia matemática" },
+    { code: "330.5", desc: "Contabilidade nacional" },
+    { code: "330.8", desc: "História económica" },
+    { code: "331", desc: "Trabalho" },
+    { code: "331.1", desc: "Organização do trabalho" },
+    { code: "331.2", desc: "Salários" },
+    { code: "331.3", desc: "Condições de trabalho" },
+    { code: "331.4", desc: "Ambiente de trabalho" },
+    { code: "331.5", desc: "Mercado de trabalho" },
+    { code: "332", desc: "Economia regional" },
+    { code: "332.1", desc: "Economia territorial" },
+    { code: "332.2", desc: "Economia da terra" },
+    { code: "332.3", desc: "Uso da terra" },
+    { code: "332.5", desc: "Procura da terra" },
+    { code: "332.6", desc: "Valor da terra" },
+    { code: "332.7", desc: "Comércio de imóveis" },
+    { code: "332.8", desc: "Economia da habitação" },
+    { code: "334", desc: "Cooperativas" },
+    { code: "336", desc: "Finanças" },
+    { code: "336.1", desc: "Finanças públicas" },
+    { code: "336.2", desc: "Receitas públicas" },
+    { code: "336.5", desc: "Despesa pública" },
+    { code: "336.7", desc: "Moeda e Banca" },
+    { code: "338", desc: "Produção económica" },
+    { code: "338.1", desc: "Situação económica" },
+    { code: "338.2", desc: "Política económica" },
+    { code: "338.3", desc: "Produção" },
+    { code: "338.4", desc: "Sectores económicos" },
+    { code: "338.48", desc: "Turismo" },
+    { code: "338.5", desc: "Preços" },
+    { code: "339", desc: "Comércio" },
+    { code: "339.1", desc: "Trocas comerciais" },
+    { code: "339.3", desc: "Comércio interno" },
+    { code: "339.5", desc: "Comércio externo" },
+    { code: "339.7", desc: "Finanças internacionais" },
+    { code: "339.9", desc: "Economia global" },
+    { code: "34", desc: "Direito" },
+    { code: "340", desc: "Lei em geral" },
+    { code: "340.1", desc: "Tipos de direito" },
+    { code: "340.13", desc: "Direito positivo" },
+    { code: "340.14", desc: "Leis não escritas" },
+    { code: "340.5", desc: "Direito comparado" },
+    { code: "340.6", desc: "Medicina legal" },
+    { code: "341", desc: "Direito internacional" },
+    { code: "341.1", desc: "Direito de organizações" },
+    { code: "341.2", desc: "Sujeitos do direito internacional" },
+    { code: "341.3", desc: "Direito de guerra" },
+    { code: "341.4", desc: "Direito penal internacional" },
+    { code: "341.6", desc: "Arbitragem internacional" },
+    { code: "341.7", desc: "Direito diplomático" },
+    { code: "341.8", desc: "Direito consular" },
+    { code: "341.9", desc: "Direito internacional privado" },
+    { code: "342", desc: "Direito constitucional" },
+    { code: "342.1", desc: "Estado e Nação" },
+    { code: "342.2", desc: "Estrutura dos estados" },
+    { code: "342.3", desc: "Soberania" },
+    { code: "342.4", desc: "Constituições" },
+    { code: "342.5", desc: "Poderes do Estado" },
+    { code: "342.6", desc: "Poder executivo" },
+    { code: "342.7", desc: "Direitos humanos" },
+    { code: "342.8", desc: "Lei eleitoral" },
+    { code: "342.9", desc: "Direito administrativo" },
+    { code: "343", desc: "Direito penal" },
+    { code: "343.1", desc: "Justiça penal" },
+    { code: "343.2", desc: "Direito penal" },
+    { code: "343.3", desc: "Crimes contra o Estado" },
+    { code: "343.4", desc: "Atentados à liberdade" },
+    { code: "343.5", desc: "Infracções morais" },
+    { code: "343.6", desc: "Infracções contra pessoas" },
+    { code: "343.8", desc: "Pena" },
+    { code: "343.9", desc: "Criminologia" },
+    { code: "344", desc: "Direito penal especial" },
+    { code: "346", desc: "Direito económico" },
+    { code: "346.2", desc: "Sujeitos económicos" },
+    { code: "346.3", desc: "Contratos económicos" },
+    { code: "346.5", desc: "Regulação económica" },
+    { code: "346.6", desc: "Regulação de preços" },
+    { code: "346.7", desc: "Regulação sectorial" },
+    { code: "346.9", desc: "Aplicação do direito económico" },
+    { code: "347", desc: "Direito civil" },
+    { code: "347.1", desc: "Direito civil geral" },
+    { code: "347.2", desc: "Direitos reais" },
+    { code: "347.3", desc: "Bens móveis" },
+    { code: "347.4", desc: "Obrigações e contratos" },
+    { code: "347.5", desc: "Responsabilidade civil" },
+    { code: "347.6", desc: "Direito da família" },
+    { code: "347.7", desc: "Direito comercial" },
+    { code: "347.8", desc: "Direito aéreo e espacial" },
+    { code: "347.9", desc: "Direito processual" },
+    { code: "348", desc: "Direito canónico" },
+    { code: "349", desc: "Ramos especiais do direito" },
+    { code: "35", desc: "Administração pública" },
+    { code: "351", desc: "Actividades da administração" },
+    { code: "352", desc: "Governo local" },
+    { code: "353", desc: "Governo regional" },
+    { code: "353.1", desc: "Regiões" },
+    { code: "353.2", desc: "Províncias" },
+    { code: "353.5", desc: "Distritos" },
+    { code: "353.8", desc: "Administração regional especial" },
+    { code: "353.9", desc: "Administração regional independente" },
+    { code: "354", desc: "Governo central" },
+    { code: "354.1", desc: "Ministérios" },
+    { code: "355", desc: "Assuntos militares" },
+    { code: "355.1", desc: "Forças armadas" },
+    { code: "355.2", desc: "Recrutamento" },
+    { code: "355.3", desc: "Organização militar" },
+    { code: "355.4", desc: "Operações de guerra" },
+    { code: "355.5", desc: "Tácticas militares" },
+    { code: "355.6", desc: "Administração militar" },
+    { code: "355.7", desc: "Estabelecimentos militares" },
+    { code: "356", desc: "Infantaria" },
+    { code: "357", desc: "Cavalaria" },
+    { code: "358", desc: "Artilharia e Aviação" },
+    { code: "358.1", desc: "Artilharia" },
+    { code: "358.4", desc: "Força aérea" },
+    { code: "359", desc: "Marinha" },
+    { code: "36", desc: "Bem-estar social" },
+    { code: "364", desc: "Serviço social" },
+    { code: "364-1", desc: "Teorias do bem-estar" },
+    { code: "364-2", desc: "Princípios da assistência" },
+    { code: "364-3", desc: "Agências sociais" },
+    { code: "364-4", desc: "Assistentes sociais" },
+    { code: "364-5", desc: "Instalações sociais" },
+    { code: "364-6", desc: "Contribuições sociais" },
+    { code: "364-7", desc: "Serviços sociais" },
+    { code: "364.2", desc: "Necessidades básicas" },
+    { code: "364.3", desc: "Segurança social" },
+    { code: "364.4", desc: "Áreas do serviço social" },
+    { code: "364.6", desc: "Questões sociais" },
+    { code: "365", desc: "Habitação" },
+    { code: "366", desc: "Consumerismo" },
+    { code: "368", desc: "Seguros" },
+    { code: "37", desc: "Educação" },
+    { code: "37.01", desc: "Teoria da educação" },
+    { code: "37.02", desc: "Didáctica" },
+    { code: "37.04", desc: "Educação e aluno" },
+    { code: "37.06", desc: "Problemas sociais na educação" },
+    { code: "37.07", desc: "Gestão escolar" },
+    { code: "37.09", desc: "Organização da instrução" },
+    { code: "373", desc: "Ensino geral" },
+    { code: "374", desc: "Ensino extra-escolar" },
+    { code: "376", desc: "Educação especial" },
+    { code: "377", desc: "Ensino técnico" },
+    { code: "378", desc: "Ensino superior" },
+    { code: "379.8", desc: "Lazer" },
+    { code: "39", desc: "Antropologia cultural" },
+    { code: "391", desc: "Vestuário e moda" },
+    { code: "392", desc: "Usos privados" },
+    { code: "393", desc: "Morte e funerais" },
+    { code: "394", desc: "Vida pública" },
+    { code: "395", desc: "Etiqueta" },
+    { code: "398", desc: "Folclore" },
+
+    // --- CLASSE 5 ---
+    { code: "5", desc: "Matemática. Ciências Naturais" },
+    { code: "502", desc: "Protecção ambiental" },
+    { code: "504", desc: "Ciências do ambiente" },
+    { code: "51", desc: "Matemática" },
+    { code: "510", desc: "Matemática geral" },
+    { code: "510.2", desc: "Problemas lógicos" },
+    { code: "510.3", desc: "Teoria dos conjuntos" },
+    { code: "510.6", desc: "Lógica matemática" },
+    { code: "511", desc: "Teoria dos números" },
+    { code: "512", desc: "Álgebra" },
+    { code: "514", desc: "Geometria" },
+    { code: "514.7", desc: "Geometria diferencial" },
+    { code: "515.1", desc: "Topologia" },
+    { code: "517", desc: "Análise matemática" },
+    { code: "517.9", desc: "Equações diferenciais" },
+    { code: "519.1", desc: "Análise combinatória" },
+    { code: "519.2", desc: "Probabilidade" },
+    { code: "519.6", desc: "Matemática computacional" },
+    { code: "519.7", desc: "Cibernética matemática" },
+    { code: "519.8", desc: "Investigação operacional" },
+    { code: "519.83", desc: "Teoria dos jogos" },
+    { code: "519.85", desc: "Programação matemática" },
+    { code: "52", desc: "Astronomia" },
+    { code: "520", desc: "Instrumentos astronómicos" },
+    { code: "521", desc: "Astronomia teórica" },
+    { code: "521.9", desc: "Astrometria" },
+    { code: "523", desc: "Sistema solar" },
+    { code: "523.3", desc: "Terra-Lua" },
+    { code: "523.4", desc: "Planetas" },
+    { code: "523.6", desc: "Cometas e Meteoros" },
+    { code: "523.9", desc: "O Sol" },
+    { code: "524", desc: "Estrelas e Universo" },
+    { code: "524.1", desc: "Raios cósmicos" },
+    { code: "524.3", desc: "Estrelas" },
+    { code: "524.4", desc: "Aglomerados estelares" },
+    { code: "524.5", desc: "Meio interestelar" },
+    { code: "524.6", desc: "Via Láctea" },
+    { code: "524.7", desc: "Sistemas extragalácticos" },
+    { code: "524.8", desc: "Cosmologia" },
+    { code: "528", desc: "Geodésia e Cartografia" },
+    { code: "528.1", desc: "Teoria dos erros" },
+    { code: "528.2", desc: "Forma da Terra" },
+    { code: "528.3", desc: "Levantamento geodésico" },
+    { code: "528.4", desc: "Topografia" },
+    { code: "528.5", desc: "Instrumentos geodésicos" },
+    { code: "528.7", desc: "Fotogrametria" },
+    { code: "528.8", desc: "Detecção remota" },
+    { code: "528.9", desc: "Cartografia" },
+    { code: "53", desc: "Física" },
+    { code: "53.01", desc: "Teoria física" },
+    { code: "53.02", desc: "Leis físicas" },
+    { code: "53.03", desc: "Causas físicas" },
+    { code: "53.04", desc: "Efeitos físicos" },
+    { code: "53.05", desc: "Observação física" },
+    { code: "53.06", desc: "Aplicações físicas" },
+    { code: "53.07", desc: "Aparelhos físicos" },
+    { code: "53.08", desc: "Medição" },
+    { code: "53.09", desc: "Dependência física" },
+    { code: "531", desc: "Mecânica" },
+    { code: "531.1", desc: "Cinemática" },
+    { code: "531.2", desc: "Estática" },
+    { code: "531.3", desc: "Dinâmica" },
+    { code: "531.4", desc: "Trabalho e Fricção" },
+    { code: "531.5", desc: "Gravidade e Balística" },
+    { code: "531.6", desc: "Energia mecânica" },
+    { code: "531.7", desc: "Medição geométrica" },
+    { code: "531.8", desc: "Mecânica técnica" },
+    { code: "532", desc: "Mecânica dos fluídos" },
+    { code: "532.1", desc: "Hidrostática" },
+    { code: "532.2", desc: "Equilíbrio dos líquidos" },
+    { code: "532.3", desc: "Corpos imersos" },
+    { code: "532.5", desc: "Hidrodinâmica" },
+    { code: "532.6", desc: "Tensão superficial" },
+    { code: "532.7", desc: "Teoria cinética dos líquidos" },
+    { code: "533", desc: "Mecânica dos gases" },
+    { code: "533.1", desc: "Propriedades dos gases" },
+    { code: "533.2", desc: "Elasticidade dos gases" },
+    { code: "533.5", desc: "Vácuo" },
+    { code: "533.6", desc: "Aerodinâmica" },
+    { code: "533.7", desc: "Teoria cinética dos gases" },
+    { code: "533.9", desc: "Física do plasma" },
+    { code: "534", desc: "Acústica" },
+    { code: "534.1", desc: "Vibração" },
+    { code: "534.2", desc: "Propagação de ondas" },
+    { code: "534.3", desc: "Sons musicais" },
+    { code: "534.4", desc: "Análise de sons" },
+    { code: "534.5", desc: "Composição de vibrações" },
+    { code: "534.6", desc: "Medições acústicas" },
+    { code: "534.7", desc: "Acústica fisiológica" },
+    { code: "534.8", desc: "Aplicações acústicas" },
+    { code: "535", desc: "Óptica" },
+    { code: "535.1", desc: "Teoria da luz" },
+    { code: "535.2", desc: "Fotometria" },
+    { code: "535.3", desc: "Reflexão e Refracção" },
+    { code: "535.4", desc: "Interferência e Difracção" },
+    { code: "535.5", desc: "Polarização" },
+    { code: "535.6", desc: "Cores" },
+    { code: "535.8", desc: "Aplicações da óptica" },
+    { code: "536", desc: "Termodinâmica" },
+    { code: "536.1", desc: "Teoria do calor" },
+    { code: "536.2", desc: "Transferência de calor" },
+    { code: "536.3", desc: "Radiação térmica" },
+    { code: "536.4", desc: "Efeitos do calor" },
+    { code: "536.5", desc: "Temperatura" },
+    { code: "536.6", desc: "Calorimetria" },
+    { code: "536.7", desc: "Energética" },
+    { code: "537", desc: "Electricidade e Magnetismo" },
+    { code: "537.2", desc: "Electroestática" },
+    { code: "537.3", desc: "Corrente eléctrica" },
+    { code: "537.5", desc: "Física de electrões" },
+    { code: "537.6", desc: "Magnetismo" },
+    { code: "537.8", desc: "Electromagnetismo" },
+    { code: "538.9", desc: "Física do estado sólido" },
+    { code: "539", desc: "Física nuclear e molecular" },
+    { code: "539.1", desc: "Física atómica" },
+    { code: "539.2", desc: "Sistemas moleculares" },
+    { code: "539.3", desc: "Elasticidade" },
+    { code: "539.4", desc: "Resistência de materiais" },
+    { code: "539.5", desc: "Deformabilidade" },
+    { code: "539.6", desc: "Forças intermoleculares" },
+    { code: "539.8", desc: "Efeitos físico-mecânicos" },
+    { code: "54", desc: "Química" },
+    { code: "542", desc: "Química de laboratório" },
+    { code: "542.1", desc: "Laboratórios" },
+    { code: "542.2", desc: "Técnicas de laboratório" },
+    { code: "542.3", desc: "Medição de volume" },
+    { code: "542.4", desc: "Aplicação de calor" },
+    { code: "542.5", desc: "Uso de chamas" },
+    { code: "542.6", desc: "Trabalho com líquidos" },
+    { code: "542.7", desc: "Trabalho com gases" },
+    { code: "542.8", desc: "Operações físico-químicas" },
+    { code: "542.9", desc: "Reacções químicas" },
+    { code: "543", desc: "Química analítica" },
+    { code: "543.2", desc: "Análise química" },
+    { code: "543.3", desc: "Análise da água" },
+    { code: "543.4", desc: "Análise espectral" },
+    { code: "543.5", desc: "Análise físico-química" },
+    { code: "543.6", desc: "Análise de substâncias" },
+    { code: "543.9", desc: "Análise bioquímica" },
+    { code: "544", desc: "Química física" },
+    { code: "544.1", desc: "Estrutura química" },
+    { code: "544.2", desc: "Estados da matéria" },
+    { code: "544.3", desc: "Termodinâmica química" },
+    { code: "544.4", desc: "Cinética química" },
+    { code: "544.5", desc: "Química de alta energia" },
+    { code: "544.6", desc: "Electroquímica" },
+    { code: "544.7", desc: "Química de superfícies" },
+    { code: "546", desc: "Química inorgânica" },
+    { code: "546.1", desc: "Não metais" },
+    { code: "546.3", desc: "Metais" },
+    { code: "547", desc: "Química orgânica" },
+    { code: "547.1", desc: "Compostos orgânicos" },
+    { code: "548", desc: "Cristalografia" },
+    { code: "548.1", desc: "Cristalografia matemática" },
+    { code: "548.2", desc: "Crescimento do cristal" },
+    { code: "548.3", desc: "Química dos cristais" },
+    { code: "548.4", desc: "Irregularidades nos cristais" },
+    { code: "548.5", desc: "Formação de cristais" },
+    { code: "548.7", desc: "Estrutura fina" },
+    { code: "549", desc: "Mineralogia" },
+    { code: "549.2", desc: "Elementos nativos" },
+    { code: "549.3", desc: "Sulfetos" },
+    { code: "549.4", desc: "Haletos" },
+    { code: "549.5", desc: "Compostos de oxigénio" },
+    { code: "549.6", desc: "Silicatos" },
+    { code: "549.7", desc: "Oxiácidos" },
+    { code: "549.8", desc: "Minerais orgânicos" },
+    { code: "55", desc: "Geologia" },
+    { code: "550", desc: "Ciências geológicas auxiliares" },
+    { code: "550.1", desc: "Fisiografia" },
+    { code: "550.2", desc: "Geoastronomia" },
+    { code: "550.3", desc: "Geofísica" },
+    { code: "550.4", desc: "Geoquímica" },
+    { code: "550.7", desc: "Geobiologia" },
+    { code: "550.8", desc: "Prospecção geológica" },
+    { code: "550.93", desc: "Geocronologia" },
+    { code: "551", desc: "Geologia geral" },
+    { code: "551.1", desc: "Estrutura da Terra" },
+    { code: "551.2", desc: "Geodinâmica interna" },
+    { code: "551.21", desc: "Vulcanismo" },
+    { code: "551.24", desc: "Geotectónica" },
+    { code: "551.3", desc: "Geodinâmica externa" },
+    { code: "551.32", desc: "Glaciologia" },
+    { code: "551.4", desc: "Geomorfologia" },
+    { code: "551.44", desc: "Espeleologia" },
+    { code: "551.46", desc: "Oceanografia física" },
+    { code: "551.58", desc: "Climatologia" },
+    { code: "551.7", desc: "Estratigrafia" },
+    { code: "551.8", desc: "Paleogeografia" },
+    { code: "552", desc: "Petrologia" },
+    { code: "552.1", desc: "Propriedades das rochas" },
+    { code: "552.3", desc: "Rochas magmáticas" },
+    { code: "552.4", desc: "Rochas metamórficas" },
+    { code: "552.5", desc: "Rochas sedimentares" },
+    { code: "552.6", desc: "Meteoritos" },
+    { code: "553", desc: "Geologia económica" },
+    { code: "553.2", desc: "Formação de minério" },
+    { code: "553.3", desc: "Depósitos de minério" },
+    { code: "553.4", desc: "Outros minérios" },
+    { code: "553.5", desc: "Pedra natural" },
+    { code: "553.6", desc: "Terras inorgânicas" },
+    { code: "553.7", desc: "Fontes minerais" },
+    { code: "553.8", desc: "Pedras preciosas" },
+    { code: "553.9", desc: "Rochas carbonáceas" },
+    { code: "556", desc: "Hidrologia" },
+    { code: "556.3", desc: "Hidrogeologia" },
+    { code: "556.5", desc: "Hidrologia de superfície" },
+    { code: "56", desc: "Paleontologia" },
+    { code: "57", desc: "Biologia" },
+    { code: "57.01", desc: "Teoria biológica" },
+    { code: "57.02", desc: "Processos biológicos" },
+    { code: "57.03", desc: "Variação biológica" },
+    { code: "57.04", desc: "Factores biológicos" },
+    { code: "57.05", desc: "Controlo biológico" },
+    { code: "57.06", desc: "Taxonomia" },
+    { code: "57.07", desc: "Paleontologia analítica" },
+    { code: "57.08", desc: "Técnicas biológicas" },
+    { code: "572", desc: "Antropologia física" },
+    { code: "572.1", desc: "Antropogenia" },
+    { code: "572.9", desc: "Antropogeografia" },
+    { code: "573", desc: "Biologia geral" },
+    { code: "574", desc: "Ecologia" },
+    { code: "575", desc: "Genética" },
+    { code: "576", desc: "Biologia celular" },
+    { code: "577", desc: "Bioquímica" },
+    { code: "578", desc: "Virologia" },
+    { code: "579", desc: "Microbiologia" },
+    { code: "579.2", desc: "Microbiologia geral" },
+    { code: "579.6", desc: "Microbiologia aplicada" },
+    { code: "579.8", desc: "Bactérias" },
+    { code: "58", desc: "Botânica" },
+    { code: "581", desc: "Botânica geral" },
+    { code: "581.1", desc: "Fisiologia vegetal" },
+    { code: "581.2", desc: "Fitopatologia" },
+    { code: "581.3", desc: "Embriologia vegetal" },
+    { code: "581.4", desc: "Morfologia vegetal" },
+    { code: "581.5", desc: "Ecologia vegetal" },
+    { code: "581.6", desc: "Botânica aplicada" },
+    { code: "581.8", desc: "Histologia vegetal" },
+    { code: "581.9", desc: "Botânica geográfica" },
+    { code: "582", desc: "Botânica sistemática" },
+    { code: "582.091", desc: "Árvores" },
+    { code: "582.093", desc: "Arbustos" },
+    { code: "582.095", desc: "Crescimento subterrâneo" },
+    { code: "582.097", desc: "Plantas trepadoras" },
+    { code: "582.099", desc: "Plantas herbáceas" },
+    { code: "582.23", desc: "Bactérias (Botânica)" },
+    { code: "582.24", desc: "Protistas" },
+    { code: "582.261", desc: "Algas" },
+    { code: "582.28", desc: "Fungos" },
+    { code: "582.29", desc: "Líquenes" },
+    { code: "582.32", desc: "Briófitas" },
+    { code: "582.361", desc: "Plantas vasculares" },
+    { code: "582.37", desc: "Pteridófitos" },
+    { code: "582.4", desc: "Espermatófitas" },
+    { code: "582.42", desc: "Gimnospermas" },
+    { code: "582.44", desc: "Cicadófitas" },
+    { code: "582.46", desc: "Ginkgófitas" },
+    { code: "582.47", desc: "Coníferas" },
+    { code: "582.5", desc: "Angiospermas" },
+    { code: "582.51", desc: "Monocotiledóneas" },
+    { code: "582.53", desc: "Alismatales" },
+    { code: "582.54", desc: "Poales" },
+    { code: "582.56", desc: "Zingiberales" },
+    { code: "582.57", desc: "Liliales" },
+    { code: "582.58", desc: "Asparagales" },
+    { code: "582.6", desc: "Dicotiledóneas" },
+    { code: "582.62", desc: "Fagales" },
+    { code: "582.63", desc: "Rosales" },
+    { code: "582.65", desc: "Nymphaeales" },
+    { code: "582.66", desc: "Caryophyllales" },
+    { code: "582.67", desc: "Magnoliids" },
+    { code: "582.68", desc: "Dilleniidae" },
+    { code: "582.7", desc: "Rosidae" },
+    { code: "582.82", desc: "Vitales" },
+    { code: "582.9", desc: "Asteridae" },
+    { code: "59", desc: "Zoologia" },
+    { code: "591", desc: "Zoologia geral" },
+    { code: "591.1", desc: "Fisiologia animal" },
+    { code: "591.2", desc: "Patologia animal" },
+    { code: "591.3", desc: "Embriologia animal" },
+    { code: "591.4", desc: "Anatomia animal" },
+    { code: "591.5", desc: "Etologia" },
+    { code: "591.6", desc: "Zoologia económica" },
+    { code: "591.8", desc: "Histologia animal" },
+    { code: "591.9", desc: "Zoogeografia" },
+    { code: "592", desc: "Invertebrados" },
+    { code: "593.1", desc: "Protozoários" },
+    { code: "593.4", desc: "Esponjas" },
+    { code: "594", desc: "Moluscos" },
+    { code: "595", desc: "Articulados" },
+    { code: "595.7", desc: "Insectos" },
+    { code: "596", desc: "Cordados" },
+    { code: "596.2", desc: "Tunicados" },
+    { code: "597", desc: "Peixes" },
+    { code: "597.3", desc: "Peixes cartilaginosos" },
+    { code: "597.4", desc: "Peixes ósseos" },
+    { code: "597.6", desc: "Anfíbios" },
+    { code: "598", desc: "Sauropsídeos" },
+    { code: "598.1", desc: "Répteis" },
+    { code: "598.2", desc: "Aves" },
+    { code: "599", desc: "Mamíferos" },
+    { code: "599.1", desc: "Prototheria" },
+    { code: "599.2", desc: "Marsupiais" },
+    { code: "599.3", desc: "Placentários" },
+    { code: "599.31", desc: "Pholidota" },
+    { code: "599.32", desc: "Roedores" },
+    { code: "599.35", desc: "Insectívoros" },
+    { code: "599.4", desc: "Morcegos" },
+    { code: "599.5", desc: "Cetáceos" },
+    { code: "599.61", desc: "Elefantes" },
+    { code: "599.72", desc: "Perissodactyla" },
+    { code: "599.73", desc: "Artiodactyla" },
+    { code: "599.74", desc: "Carnívoros" },
+    { code: "599.8", desc: "Primatas" },
+
+    // --- CLASSE 6 ---
+    { code: "6", desc: "Ciências Aplicadas" },
+    { code: "60", desc: "Biotecnologia" },
+    { code: "601", desc: "Conceitos de biotecnologia" },
+    { code: "602", desc: "Processos biotecnológicos" },
+    { code: "604", desc: "Produtos biotecnológicos" },
+    { code: "606", desc: "Aplicações biotecnológicas" },
+    { code: "608", desc: "Problemas em biotecnologia" },
+    { code: "61", desc: "Medicina" },
+    { code: "611", desc: "Anatomia" },
+    { code: "612", desc: "Fisiologia" },
+    { code: "612.1", desc: "Sistema cardiovascular" },
+    { code: "612.2", desc: "Sistema respiratório" },
+    { code: "612.3", desc: "Sistema digestivo" },
+    { code: "612.4", desc: "Sistema glandular" },
+    { code: "612.5", desc: "Calor animal" },
+    { code: "612.6", desc: "Reprodução" },
+    { code: "612.7", desc: "Sistema locomotor" },
+    { code: "612.8", desc: "Sistema nervoso" },
+    { code: "613", desc: "Higiene" },
+    { code: "613.2", desc: "Dietética" },
+    { code: "613.4", desc: "Higiene pessoal" },
+    { code: "613.6", desc: "Saúde ocupacional" },
+    { code: "613.7", desc: "Higiene do lazer" },
+    { code: "613.8", desc: "Saúde mental e vícios" },
+    { code: "614", desc: "Saúde pública" },
+    { code: "614.2", desc: "Organização da saúde" },
+    { code: "614.4", desc: "Epidemiologia" },
+    { code: "614.7", desc: "Higiene ambiental" },
+    { code: "614.8", desc: "Segurança" },
+    { code: "614.9", desc: "Saúde animal" },
+    { code: "615", desc: "Farmacologia" },
+    { code: "615.1", desc: "Farmácia" },
+    { code: "615.8", desc: "Fisioterapia" },
+    { code: "616", desc: "Patologia" },
+    { code: "616-001", desc: "Traumatismos" },
+    { code: "616-002", desc: "Inflamação" },
+    { code: "616-006", desc: "Oncologia" },
+    { code: "616-007", desc: "Malformações" },
+    { code: "616-009", desc: "Distúrbios nervosos" },
+    { code: "616-05", desc: "Pacientes" },
+    { code: "616-07", desc: "Diagnóstico" },
+    { code: "616-08", desc: "Tratamento" },
+    { code: "616.1", desc: "Doenças cardiovasculares" },
+    { code: "616.2", desc: "Doenças respiratórias" },
+    { code: "616.3", desc: "Doenças digestivas" },
+    { code: "616.31", desc: "Estomatologia" },
+    { code: "616.5", desc: "Dermatologia" },
+    { code: "616.6", desc: "Urologia" },
+    { code: "616.7", desc: "Doenças locomotoras" },
+    { code: "616.8", desc: "Neurologia e Psiquiatria" },
+    { code: "616.9", desc: "Doenças infecciosas" },
+    { code: "617", desc: "Cirurgia" },
+    { code: "618", desc: "Ginecologia e Obstetrícia" },
+    { code: "62", desc: "Engenharia" },
+    { code: "620", desc: "Engenharia de materiais" },
+    { code: "620.3", desc: "Nanotecnologia" },
+    { code: "621", desc: "Engenharia mecânica" },
+    { code: "621.1", desc: "Máquinas a vapor" },
+    { code: "621.22", desc: "Energia hidráulica" },
+    { code: "621.3", desc: "Engenharia eléctrica" },
+    { code: "621.4", desc: "Motores térmicos" },
+    { code: "621.5", desc: "Pneumática" },
+    { code: "621.6", desc: "Fluidos" },
+    { code: "621.7", desc: "Tecnologia mecânica" },
+    { code: "621.8", desc: "Elementos de máquinas" },
+    { code: "621.9", desc: "Maquinagem" },
+    { code: "622", desc: "Mineração" },
+    { code: "622.1", desc: "Prospecção mineira" },
+    { code: "622.2", desc: "Operações mineiras" },
+    { code: "622.3", desc: "Mineração específica" },
+    { code: "622.7", desc: "Processamento mineral" },
+    { code: "623", desc: "Engenharia militar" },
+    { code: "623.1", desc: "Fortificações" },
+    { code: "623.4", desc: "Armamento" },
+    { code: "623.7", desc: "Engenharia militar aérea" },
+    { code: "623.8", desc: "Engenharia naval militar" },
+    { code: "624", desc: "Engenharia civil" },
+    { code: "624.01", desc: "Estruturas" },
+    { code: "624.1", desc: "Geotecnia" },
+    { code: "624.21", desc: "Pontes" },
+    { code: "625", desc: "Engenharia de transportes" },
+    { code: "625.1", desc: "Ferrovias" },
+    { code: "625.7", desc: "Rodovias" },
+    { code: "626", desc: "Engenharia hidráulica" },
+    { code: "627", desc: "Engenharia fluvial e portuária" },
+    { code: "627.8", desc: "Barragens" },
+    { code: "628", desc: "Engenharia sanitária" },
+    { code: "628.1", desc: "Abastecimento de água" },
+    { code: "628.2", desc: "Saneamento" },
+    { code: "628.4", desc: "Resíduos sólidos" },
+    { code: "628.9", desc: "Iluminação" },
+    { code: "629", desc: "Engenharia de veículos" },
+    { code: "629.3", desc: "Veículos terrestres" },
+    { code: "629.4", desc: "Veículos ferroviários" },
+    { code: "629.5", desc: "Veículos navais" },
+    { code: "629.7", desc: "Aeronáutica e Astronáutica" },
+    { code: "63", desc: "Agricultura" },
+    { code: "630", desc: "Silvicultura" },
+    { code: "631", desc: "Agronomia" },
+    { code: "631.1", desc: "Gestão agrícola" },
+    { code: "631.3", desc: "Maquinaria agrícola" },
+    { code: "631.4", desc: "Pedologia" },
+    { code: "631.8", desc: "Fertilizantes" },
+    { code: "632", desc: "Fitopatologia" },
+    { code: "633", desc: "Culturas de campo" },
+    { code: "633.1", desc: "Cereais" },
+    { code: "634", desc: "Fruticultura" },
+    { code: "634.8", desc: "Viticultura" },
+    { code: "635", desc: "Horticultura" },
+    { code: "636", desc: "Pecuária" },
+    { code: "636.09", desc: "Veterinária" },
+    { code: "637", desc: "Lacticínios e produtos animais" },
+    { code: "639", desc: "Caça e Pesca" },
+    { code: "64", desc: "Economia doméstica" },
+    { code: "641", desc: "Culinária" },
+    { code: "643", desc: "Habitação" },
+    { code: "646", desc: "Vestuário" },
+    { code: "65", desc: "Gestão e Comércio" },
+    { code: "654", desc: "Telecomunicações" },
+    { code: "655", desc: "Indústrias gráficas" },
+    { code: "656", desc: "Transportes" },
+    { code: "657", desc: "Contabilidade" },
+    { code: "658", desc: "Gestão de empresas" },
+    { code: "658.3", desc: "Recursos humanos" },
+    { code: "658.8", desc: "Marketing" },
+    { code: "659", desc: "Publicidade" },
+    { code: "66", desc: "Tecnologia química" },
+    { code: "661", desc: "Produtos químicos" },
+    { code: "662", desc: "Explosivos e Combustíveis" },
+    { code: "663", desc: "Bebidas" },
+    { code: "663.2", desc: "Enologia" },
+    { code: "664", desc: "Indústria alimentar" },
+    { code: "665", desc: "Óleos e Petróleo" },
+    { code: "666", desc: "Vidro e Cerâmica" },
+    { code: "667", desc: "Corantes e Tintas" },
+    { code: "669", desc: "Metalurgia" },
+    { code: "67", desc: "Indústrias transformadoras" },
+    { code: "671", desc: "Joalharia" },
+    { code: "672", desc: "Ferro e Aço" },
+    { code: "674", desc: "Madeira" },
+    { code: "675", desc: "Couro" },
+    { code: "676", desc: "Papel" },
+    { code: "677", desc: "Têxteis" },
+    { code: "678", desc: "Borracha e Plásticos" },
+    { code: "68", desc: "Indústrias de precisão" },
+    { code: "681", desc: "Instrumentos de precisão" },
+    { code: "681.5", desc: "Controlo automático" },
+    { code: "681.6", desc: "Máquinas de impressão" },
+    { code: "687", desc: "Vestuário" },
+    { code: "69", desc: "Construção civil" },
+    { code: "691", desc: "Materiais de construção" },
+
+    // --- CLASSE 7 ---
+    { code: "7", desc: "Artes" },
+    { code: "7.01", desc: "Teoria da arte" },
+    { code: "7.03", desc: "História da arte" },
+    { code: "71", desc: "Urbanismo" },
+    { code: "711", desc: "Planeamento territorial" },
+    { code: "712", desc: "Arquitectura paisagista" },
+    { code: "72", desc: "Arquitectura" },
+    { code: "721", desc: "Edifícios" },
+    { code: "725", desc: "Edifícios públicos" },
+    { code: "726", desc: "Arquitectura religiosa" },
+    { code: "728", desc: "Habitação" },
+    { code: "73", desc: "Escultura" },
+    { code: "737", desc: "Numismática" },
+    { code: "738", desc: "Cerâmica" },
+    { code: "739", desc: "Ourivesaria" },
+    { code: "74", desc: "Desenho" },
+    { code: "741", desc: "Desenho artístico" },
+    { code: "744", desc: "Desenho técnico" },
+    { code: "745", desc: "Artesanato" },
+    { code: "75", desc: "Pintura" },
+    { code: "76", desc: "Artes gráficas" },
+    { code: "77", desc: "Fotografia" },
+    { code: "78", desc: "Música" },
+    { code: "78.01", desc: "Teoria musical" },
+    { code: "782", desc: "Ópera" },
+    { code: "784", desc: "Música vocal" },
+    { code: "785", desc: "Música instrumental" },
+    { code: "79", desc: "Divertimentos" },
+    { code: "791", desc: "Cinema" },
+    { code: "792", desc: "Teatro" },
+    { code: "793", desc: "Dança" },
+    { code: "794", desc: "Jogos de tabuleiro" },
+    { code: "796", desc: "Desporto" },
+    { code: "796.3", desc: "Jogos de bola" },
+    { code: "796.4", desc: "Ginástica" },
+    { code: "797", desc: "Desportos aquáticos" },
+    { code: "798", desc: "Hipismo" },
+    { code: "799", desc: "Pesca e Caça desportivas" },
+
+    // --- CLASSE 8 ---
+    { code: "8", desc: "Língua e Literatura" },
+    { code: "80", desc: "Filologia" },
+    { code: "801", desc: "Prosódia" },
+    { code: "808", desc: "Retórica" },
+    { code: "81", desc: "Linguística" },
+    { code: "811", desc: "Línguas" },
+    { code: "811.111", desc: "Inglês" },
+    { code: "811.112.2", desc: "Alemão" },
+    { code: "811.133.1", desc: "Francês" },
+    { code: "811.134.2", desc: "Espanhol" },
+    { code: "811.134.3", desc: "Português" },
+    { code: "82", desc: "Literatura" },
+    { code: "82-1", desc: "Poesia" },
+    { code: "82-2", desc: "Teatro" },
+    { code: "82-3", desc: "Ficção" },
+    { code: "821", desc: "Literaturas nacionais" },
+    { code: "821.134.3", desc: "Literatura Portuguesa" },
+
+    // --- CLASSE 9 ---
+    { code: "9", desc: "Geografia e História" },
+    { code: "902", desc: "Arqueologia" },
+    { code: "903", desc: "Pré-história" },
+    { code: "908", desc: "Monografias regionais" },
+    { code: "91", desc: "Geografia" },
+    { code: "911", desc: "Geografia geral" },
+    { code: "912", desc: "Mapas" },
+    { code: "913", desc: "Geografia regional" },
+    { code: "92", desc: "Biografia" },
+    { code: "929", desc: "Genealogia" },
+    { code: "929.5", desc: "Genealogia (ramo)" },
+    { code: "929.6", desc: "Heráldica" },
+    { code: "929.9", desc: "Bandeiras" },
+    { code: "93", desc: "História" },
+    { code: "930", desc: "Ciência histórica" },
+    { code: "94", desc: "História geral" }
+];
