@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- ELEMENTOS DO DOM ---
+    // --- ELEMENTOS ---
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
     const clearBtn = document.getElementById('clearBtn');
@@ -12,13 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. INICIALIZAÇÃO ---
     let dadosAtivos = (typeof baseCDD !== 'undefined') ? baseCDD : [];
 
-    // Verificação de Segurança
     if (typeof baseCDD === 'undefined' || typeof baseCDU === 'undefined') {
-        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Verifique se dados_cdd.js e dados_cdu.js estão carregados.</div>';
+        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Arquivos de dados não carregados.</div>';
         return;
     }
 
-    // --- 2. EVENTO DE TROCA (CDD <-> CDU) ---
+    // --- 2. TROCA DE BASE ---
     dbRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             searchInput.value = '';
@@ -26,10 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
             clearBtn.style.display = 'none';
 
             if (e.target.value === 'cdu') {
-                dadosAtivos = baseCDU; 
-                searchInput.placeholder = "CDU: código ou termo (ex: (81), 004...)";
+                dadosAtivos = baseCDU;
+                searchInput.placeholder = "CDU: código ou termo...";
             } else {
-                dadosAtivos = baseCDD; 
+                dadosAtivos = baseCDD;
                 searchInput.placeholder = "CDD: código ou assunto...";
             }
             searchInput.focus();
@@ -44,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         debounceTimer = setTimeout(() => performSearch(query), 300); 
     }
 
-    // --- 4. BUSCA HÍBRIDA ---
+    // --- 4. BUSCA ---
     function performSearch(query) {
         const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
@@ -55,61 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let results = [];
 
-        if (Array.isArray(dadosAtivos)) {
-            // Busca CDD (Lista)
-            results = dadosAtivos.filter(item => {
-                const code = item.code.toLowerCase();
-                const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
-            });
-        } else {
-            // Busca CDU (Árvore)
-            results = searchCDU(dadosAtivos, normalizedQuery);
-        }
+        // Lógica unificada de filtro (já que seus dados CDU agora são lista plana igual CDD)
+        results = dadosAtivos.filter(item => {
+            const code = item.code.toLowerCase();
+            const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
+        });
         
         displayResults(results, normalizedQuery);
     }
 
-    // Função Recursiva para CDU
-    function searchCDU(database, query) {
-        let found = [];
-
-        // Auxiliares
-        if (database.auxiliares) {
-            found = found.concat(database.auxiliares.filter(item => {
-                const cleanDesc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return item.code.toLowerCase().includes(query) || cleanDesc.includes(query);
-            }));
-        }
-
-        // Árvore Principal
-        function traverse(nodes, path = []) {
-            for (const key in nodes) {
-                const node = nodes[key];
-                const currentCode = key; 
-                const cleanDesc = node.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-                // Se deu match
-                if (currentCode.toLowerCase().includes(query) || cleanDesc.includes(query)) {
-                    found.push({ 
-                        code: currentCode, 
-                        desc: node.desc,
-                        path: [...path] // Passa o histórico de pais
-                    });
-                }
-
-                // Recursão
-                if (node.children) {
-                    traverse(node.children, [...path, { code: key, desc: node.desc }]);
-                }
-            }
-        }
-
-        if (database.principal) traverse(database.principal);
-        return found;
-    }
-
-    // --- 5. EXIBIÇÃO (ATUALIZADO COM CLIQUE) ---
+    // --- 5. EXIBIÇÃO COM BREADCRUMB INTERATIVO ---
     function displayResults(results, q) {
         resultsArea.innerHTML = ''; 
         if (results.length === 0) {
@@ -120,20 +75,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const fragment = document.createDocumentFragment();
         const currentDbName = document.querySelector('input[name="database"]:checked').value.toUpperCase();
 
+        // Limita a 50 resultados para performance
         results.slice(0, 50).forEach(item => {
             const mainClass = item.code.charAt(0);
             const colorClass = (isNaN(mainClass) && mainClass !== '(' && mainClass !== '"') ? '0' : mainClass.replace(/[^0-9]/g, '').charAt(0) || '0';
             
-            // Cria o container do card
             const card = document.createElement('div');
             card.className = `level-card class-${colorClass}`;
 
-            // Highlight do termo buscado na descrição principal
+            // Highlight
             const regex = new RegExp(`(${q})`, 'gi');
             let highlightedDesc = item.desc;
             try { highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>'); } catch(e){}
 
-            // Monta o HTML básico do card (sem o breadcrumb ainda)
+            // Estrutura básica do card
             card.innerHTML = `
                 <span class="level-tag">${currentDbName}</span>
                 <div class="level-content">
@@ -144,47 +99,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            // --- LÓGICA DO BREADCRUMB INTERATIVO ---
-            let parents = [];
+            // --- LÓGICA DO CAMINHO (BREADCRUMB) ---
+            const parents = getParents(item.code);
             
-            // Recupera pais (CDD ou CDU)
-            if (Array.isArray(dadosAtivos)) {
-                parents = getCDDParents(item.code);
-            } else if (item.path) {
-                parents = item.path;
-            }
-
-            // Se houver pais, cria o elemento clicável e insere no card
             if (parents.length > 0) {
-                // Versão Curta (Truncada)
+                // 1. Texto Curto (Linha única, truncado)
                 const shortHtml = parents.map(p => 
                     `<span>${p.code} ${truncate(p.desc)}</span>`
                 ).join(' &rsaquo; ');
 
-                // Versão Longa (Completa)
+                // 2. Texto Completo (Vertical, expandido)
                 const fullHtml = parents.map(p => 
-                    `<span><strong>${p.code}</strong> ${p.desc}</span>`
-                ).join('<br>↓<br>'); // Usa setas verticais para ficar bonito quando aberto
+                    `<div style="margin: 2px 0;"><strong>${p.code}</strong> ${p.desc}</div>`
+                ).join('<div style="color:var(--border); text-align:center; line-height:10px;">↓</div>');
 
-                // Cria o elemento DIV via JS para garantir segurança dos eventos
+                // Cria o elemento DIV
                 const breadcrumbDiv = document.createElement('div');
                 breadcrumbDiv.className = 'breadcrumb';
                 breadcrumbDiv.innerHTML = shortHtml; // Começa curto
-                breadcrumbDiv.title = "Clique para ver o caminho completo";
+                breadcrumbDiv.title = "Clique para ver hierarquia completa";
                 
-                // Evento de Clique (Toggle)
+                // EVENTO DE CLIQUE (A Mágica)
                 breadcrumbDiv.onclick = (e) => {
-                    e.stopPropagation(); // Evita bolhas de evento indesejadas
+                    e.stopPropagation(); // Não ativa cliques do card pai se houver
+                    
+                    // Se estiver curto, expande
                     if (breadcrumbDiv.innerHTML === shortHtml) {
                         breadcrumbDiv.innerHTML = fullHtml;
                         breadcrumbDiv.style.whiteSpace = "normal"; // Permite quebra de linha
-                    } else {
+                        breadcrumbDiv.style.overflow = "visible";
+                        breadcrumbDiv.style.borderBottom = "1px solid var(--border)";
+                        breadcrumbDiv.style.paddingBottom = "8px";
+                        breadcrumbDiv.style.marginBottom = "8px";
+                    } 
+                    // Se estiver expandido, recolhe
+                    else {
                         breadcrumbDiv.innerHTML = shortHtml;
                         breadcrumbDiv.style.whiteSpace = "nowrap"; // Volta para linha única
+                        breadcrumbDiv.style.overflow = "hidden";
+                        breadcrumbDiv.style.borderBottom = "none";
+                        breadcrumbDiv.style.paddingBottom = "4px";
+                        breadcrumbDiv.style.marginBottom = "0.5rem";
                     }
                 };
 
-                // Insere o breadcrumb no topo do conteúdo do card
+                // Insere no topo do card
                 card.querySelector('.level-content').prepend(breadcrumbDiv);
             }
 
@@ -194,21 +153,27 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsArea.appendChild(fragment);
     }
 
-    // --- 6. AUXILIARES ---
+    // --- 6. FUNÇÕES AUXILIARES ---
     
-    function getCDDParents(code) {
+    // Encontra os pais baseados na lógica decimal (ex: 331 -> pai 330 -> pai 300)
+    function getParents(code) {
         const potentialParents = [];
-        if (code.length >= 3) potentialParents.push(code.charAt(0) + "00"); 
-        if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.push(code.substring(0, 2) + "0");
-        if (code.includes('.')) potentialParents.push(code.split('.')[0]);
         
+        // Regra geral para CDD/CDU decimal
+        if (code.length >= 3) potentialParents.push(code.charAt(0) + "00"); // Centena (300)
+        if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.push(code.substring(0, 2) + "0"); // Dezena (330)
+        if (code.includes('.')) potentialParents.push(code.split('.')[0]); // Antes do ponto
+        
+        // Remove duplicatas e o próprio código da lista de pais
         return [...new Set(potentialParents)]
             .filter(p => p !== code)
-            .map(p => dadosAtivos.find(d => d.code === p))
-            .filter(Boolean);
+            .map(p => dadosAtivos.find(d => d.code === p)) // Busca o objeto real no banco
+            .filter(Boolean) // Remove undefined se não achar
+            .sort((a, b) => a.code.length - b.code.length); // Ordena do mais geral para o específico
     }
 
-    function truncate(str, n = 25) { // Aumentei um pouco o limite
+    // Corta texto longo
+    function truncate(str, n = 20) {
         return (str.length > n) ? str.substr(0, n-1) + '...' : str;
     }
 
@@ -216,11 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', handleInput);
     clearBtn.addEventListener('click', () => { searchInput.value = ''; searchInput.focus(); handleInput(); });
     
+    // Tema
     if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     themeBtn?.addEventListener('click', () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
     });
+
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
 });
