@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Elementos do DOM
+    // --- ELEMENTOS DO DOM ---
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
     const clearBtn = document.getElementById('clearBtn');
@@ -13,94 +13,133 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let debounceTimer;
     let isBrowseMode = false;
-    let currentBrowsePath = []; // Histórico da navegação
+    let currentBrowsePath = []; // Histórico de navegação (objetos {code, desc})
     
-    // 1. Inicialização Segura
+    // --- 1. INICIALIZAÇÃO ---
     let dadosAtivos = (typeof baseCDD !== 'undefined') ? baseCDD : [];
 
     if (typeof baseCDD === 'undefined' || typeof baseCDU === 'undefined') {
-        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Arquivos de dados (CDD/CDU) não carregados.</div>';
+        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Bases de dados não carregadas.</div>';
         return;
     }
 
-    // 2. Troca de Base (CDD <-> CDU)
+    // --- 2. TROCA DE BASE E RESET ---
     dbRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
-            resetInterface(); // Reseta a tela ao trocar
+            resetInterface();
             if (e.target.value === 'cdu') {
-                dadosAtivos = baseCDU;
+                dadosAtivos = baseCDU; // Estrutura de Objeto/Árvore
                 searchInput.placeholder = "CDU: código ou termo...";
             } else {
-                dadosAtivos = baseCDD;
+                dadosAtivos = baseCDD; // Estrutura de Array/Lista
                 searchInput.placeholder = "CDD: código ou assunto...";
             }
         });
     });
 
-    // Alternar Modo Navegação
+    function resetInterface() {
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        isBrowseMode = false;
+        browseBtn.classList.remove('active');
+        browseArea.style.display = 'none';
+        resultsArea.style.display = 'flex';
+        resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
+    }
+
+    // --- 3. MODO NAVEGAÇÃO (BROWSE) ---
     browseBtn.addEventListener('click', () => {
         isBrowseMode = !isBrowseMode;
         browseBtn.classList.toggle('active');
         
         if (isBrowseMode) {
-            // Ativa navegação
             resultsArea.style.display = 'none';
             browseArea.style.display = 'block';
-            currentBrowsePath = []; // Começa do zero
-            renderBrowseLevel('');
+            currentBrowsePath = [];
+            renderBrowseLevel(); // Inicia na raiz
         } else {
-            // Volta para busca
-            resultsArea.style.display = 'block';
+            resultsArea.style.display = 'flex';
             browseArea.style.display = 'none';
             searchInput.focus();
         }
     });
 
-    function resetInterface() {
-        searchInput.value = '';
-        resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
-        clearBtn.style.display = 'none';
-        isBrowseMode = false;
-        browseBtn.classList.remove('active');
-        browseArea.style.display = 'none';
-        resultsArea.style.display = 'block';
+    function renderBrowseLevel() {
+        const isCDU = !Array.isArray(dadosAtivos);
+        let items = [];
+
+        if (isCDU) {
+            // Lógica para CDU (Navegar no Objeto)
+            let currentLevel = dadosAtivos.principal;
+            // Percorre o caminho até o nível atual
+            currentBrowsePath.forEach(step => {
+                if (currentLevel[step.code] && currentLevel[step.code].children) {
+                    currentLevel = currentLevel[step.code].children;
+                }
+            });
+            // Transforma as chaves do nível atual em itens para a lista
+            items = Object.keys(currentLevel).map(key => ({
+                code: key,
+                desc: currentLevel[key].desc,
+                hasChildren: !!currentLevel[key].children
+            }));
+        } else {
+            // Lógica para CDD (Navegar na Lista Plana)
+            const parentCode = currentBrowsePath.length > 0 ? currentBrowsePath[currentBrowsePath.length - 1].code : '';
+            items = findDirectChildrenCDD(parentCode);
+        }
+
+        updateBrowseUI(items);
     }
 
-    // 3. Lógica de Navegação (Browse Mode)
-    function renderBrowseLevel(parentCode) {
-        // Encontra filhos baseados no código pai
-        const children = findDirectChildren(parentCode, dadosAtivos);
-        
-        updateBreadcrumbUI();
+    function updateBrowseUI(items) {
+        // Atualiza Breadcrumb da Navegação
+        browseBreadcrumb.innerHTML = '';
+        const home = document.createElement('span');
+        home.className = 'crumb';
+        home.innerText = '🏠 Início';
+        home.onclick = () => { currentBrowsePath = []; renderBrowseLevel(); };
+        browseBreadcrumb.appendChild(home);
+
+        currentBrowsePath.forEach((step, index) => {
+            browseBreadcrumb.appendChild(document.createTextNode(' › '));
+            const span = document.createElement('span');
+            span.className = 'crumb';
+            span.innerText = step.code;
+            span.onclick = () => {
+                currentBrowsePath = currentBrowsePath.slice(0, index + 1);
+                renderBrowseLevel();
+            };
+            browseBreadcrumb.appendChild(span);
+        });
+
+        // Renderiza Lista de Itens (Pastas/Arquivos)
         browseList.innerHTML = '';
-        
-        if (children.length === 0) {
-            browseList.innerHTML = '<div class="empty-state">Esta categoria não tem subitens.</div>';
+        if (items.length === 0) {
+            browseList.innerHTML = '<div class="empty-state">Fim da hierarquia.</div>';
             return;
         }
 
-        children.forEach(item => {
-            // Verifica se este item tem subitens para decidir se é pasta ou arquivo
-            const subItems = findDirectChildren(item.code, dadosAtivos);
-            const isFolder = subItems.length > 0;
-            
+        items.forEach(item => {
             const div = document.createElement('div');
-            div.className = `folder-item ${isFolder ? 'has-children' : 'is-leaf'}`;
-            
+            div.className = `folder-item ${item.hasChildren ? 'has-children' : 'is-leaf'}`;
             div.onclick = () => {
-                if (isFolder) {
-                    currentBrowsePath.push(item); // Entra na pasta
-                    renderBrowseLevel(item.code);
+                if (item.hasChildren) {
+                    currentBrowsePath.push(item);
+                    renderBrowseLevel();
                 } else {
-                    // Feedback visual se for folha
+                    // Se for item final, joga para a busca para ver detalhes
+                    isBrowseMode = false;
+                    browseBtn.classList.remove('active');
+                    browseArea.style.display = 'none';
+                    resultsArea.style.display = 'flex';
                     searchInput.value = item.code;
-                    browseBtn.click(); // Volta para busca mostrando esse item
-                    handleInput();
+                    performSearch(item.code);
                 }
             };
 
             div.innerHTML = `
-                <span style="font-size:1.2rem; margin-right:10px;">${isFolder ? '📁' : '📄'}</span>
+                <span class="folder-icon">${item.hasChildren ? '📁' : '📄'}</span>
                 <div class="folder-info">
                     <span class="folder-code">${item.code}</span>
                     <span class="folder-desc">${item.desc}</span>
@@ -110,102 +149,69 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Algoritmo: Encontra filhos em lista plana
-    function findDirectChildren(parentCode, db) {
-        const isCDU = (dadosAtivos === baseCDU);
-        
-        // Filtra candidatos que começam com o código pai
-        const candidates = db.filter(item => {
-            if (parentCode === '') {
-                // Na raiz CDD: exibe 000, 100, 200... (tamanho 3, termina em 00)
-                if (!isCDU) return item.code.length === 3 && item.code.endsWith('00');
-                // Na raiz CDU: exibe 0, 1, 2... (tamanho 1)
-                return item.code.length === 1 && !isNaN(item.code);
-            }
-            return item.code.startsWith(parentCode) && item.code !== parentCode;
-        });
-
-        // Filtra apenas o nível imediatamente abaixo
-        return candidates.filter(child => {
-            // Regra simplificada para performance:
-            // CDU: Se pai é "0", filho deve ser "00", "01"...
-            if (isCDU) {
-                // Aceita apenas se for uma extensão lógica direta
-                // Ex: de "0" para "00", de "00" para "001"
-                return child.code.length > parentCode.length; 
-            }
-            // CDD: Lógica decimal estrita
-            // Ex: de "300" para "330", de "330" para "331"
-            return true; 
-        }).filter((child, index, self) => {
-            // Remove duplicatas lógicas mais profundas (Ex: não mostrar 331 se estou vendo 300, mostrar só 330)
-            if (isCDU) {
-                 // CDU é complexa, mostra tudo que começa com o pai e ordena
-                 // Para melhorar, removemos itens que já têm um pai na lista atual
-                 const parentInList = self.some(p => p !== child && child.code.startsWith(p.code));
-                 return !parentInList;
-            } else {
-                // CDD
-                if (parentCode.endsWith('00')) { // Estou em 300 -> quero 310, 320...
-                    return child.code.charAt(1) !== '0' && child.code.endsWith('0'); 
-                }
-                if (parentCode.endsWith('0')) { // Estou em 330 -> quero 331, 332...
-                    return !child.code.endsWith('0') && !child.code.includes('.');
-                }
-                return true;
-            }
-        }).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+    // Auxiliar para encontrar filhos na CDD (Lista Plana)
+    function findDirectChildrenCDD(parentCode) {
+        return dadosAtivos.filter(item => {
+            if (parentCode === '') return item.code.length === 3 && item.code.endsWith('00');
+            if (parentCode.endsWith('00')) return item.code.startsWith(parentCode[0]) && item.code.endsWith('0') && item.code !== parentCode;
+            if (parentCode.endsWith('0')) return item.code.startsWith(parentCode.substring(0, 2)) && !item.code.includes('.') && item.code !== parentCode;
+            return item.code.startsWith(parentCode + ".") && item.code.split('.').length === parentCode.split('.').length + 1;
+        }).map(item => ({
+            ...item,
+            hasChildren: dadosAtivos.some(child => child.code.startsWith(item.code) && child.code !== item.code)
+        })).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
     }
 
-    function updateBreadcrumbUI() {
-        browseBreadcrumb.innerHTML = '';
-        const home = document.createElement('span');
-        home.className = 'crumb';
-        home.innerText = '🏠 Início';
-        home.onclick = () => {
-            currentBrowsePath = [];
-            renderBrowseLevel('');
-        };
-        browseBreadcrumb.appendChild(home);
-
-        currentBrowsePath.forEach((item, index) => {
-            browseBreadcrumb.appendChild(document.createTextNode(' › '));
-            const span = document.createElement('span');
-            span.className = 'crumb';
-            span.innerText = item.code;
-            span.onclick = () => {
-                currentBrowsePath = currentBrowsePath.slice(0, index + 1);
-                renderBrowseLevel(item.code);
-            };
-            browseBreadcrumb.appendChild(span);
-        });
-    }
-
-    // 4. Busca Normal
-    function handleInput() {
-        if(isBrowseMode) return;
-        const query = searchInput.value.trim();
-        clearBtn.style.display = query.length > 0 ? 'block' : 'none';
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => performSearch(query), 300); 
-    }
-
+    // --- 4. MOTOR DE BUSCA (HÍBRIDO) ---
     function performSearch(query) {
+        if (isBrowseMode) return;
         const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
         if (query.length === 0) {
             resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
             return;
         }
 
-        const results = dadosAtivos.filter(item => {
-            const code = item.code.toLowerCase();
-            const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
-        });
+        let results = [];
+        if (Array.isArray(dadosAtivos)) {
+            // Busca Simples (CDD)
+            results = dadosAtivos.filter(item => {
+                const code = item.code.toLowerCase();
+                const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
+            });
+        } else {
+            // Busca Recursiva (CDU - Objeto)
+            results = searchCDU(dadosAtivos, normalizedQuery);
+        }
         
         displayResults(results, normalizedQuery);
     }
 
+    function searchCDU(database, query) {
+        let found = [];
+        if (database.auxiliares) {
+            found = found.concat(database.auxiliares.filter(item => {
+                const cleanDesc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return item.code.toLowerCase().includes(query) || cleanDesc.includes(query);
+            }).map(r => ({...r, path: []})));
+        }
+
+        function traverse(nodes, currentPath = []) {
+            for (const key in nodes) {
+                const node = nodes[key];
+                const cleanDesc = node.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (key.toLowerCase().includes(query) || cleanDesc.includes(query)) {
+                    found.push({ code: key, desc: node.desc, path: [...currentPath] });
+                }
+                if (node.children) traverse(node.children, [...currentPath, {code: key, desc: node.desc}]);
+            }
+        }
+        if (database.principal) traverse(database.principal);
+        return found;
+    }
+
+    // --- 5. RENDERIZAÇÃO DE RESULTADOS ---
     function displayResults(results, q) {
         resultsArea.innerHTML = ''; 
         if (results.length === 0) {
@@ -213,37 +219,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        const isCDU = !Array.isArray(dadosAtivos);
         const fragment = document.createDocumentFragment();
-        const isCDU = (dadosAtivos === baseCDU);
-        const currentDbLabel = isCDU ? 'CDU' : 'CDD';
 
         results.slice(0, 50).forEach(item => {
             const mainClass = item.code.charAt(0);
             const colorClass = (isNaN(mainClass) && mainClass !== '(' && mainClass !== '"') ? '0' : mainClass.replace(/[^0-9]/g, '').charAt(0) || '0';
-            
             const card = document.createElement('div');
             card.className = `level-card class-${colorClass}`;
 
             const regex = new RegExp(`(${q})`, 'gi');
-            let highlightedDesc = item.desc;
-            try { highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>'); } catch(e){}
+            let highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>');
 
             card.innerHTML = `
-                <span class="level-tag">${currentDbLabel}</span>
+                <span class="level-tag">${isCDU ? 'CDU' : 'CDD'}</span>
                 <div class="level-content">
                     <div class="level-header"><span class="level-code">${item.code}</span></div>
                     <span class="level-desc">${highlightedDesc}</span>
                 </div>
             `;
-            
-            // Breadcrumb Completo (Sem cortes)
-            const parents = getParents(item.code, isCDU);
+
+            // Breadcrumb do resultado (Caminho Completo)
+            let parents = isCDU ? (item.path || []) : getParentsCDD(item.code);
             if (parents.length > 0) {
-                const fullPathHTML = parents.map(p => `<span>${p.code} ${p.desc}</span>`).join(' &rsaquo; ');
-                const div = document.createElement('div');
-                div.className = 'breadcrumb';
-                div.innerHTML = fullPathHTML;
-                card.querySelector('.level-content').prepend(div);
+                const pathHTML = parents.map(p => `<span>${p.code} ${p.desc}</span>`).join(' &rsaquo; ');
+                const bDiv = document.createElement('div');
+                bDiv.className = 'breadcrumb';
+                bDiv.innerHTML = pathHTML;
+                card.querySelector('.level-content').prepend(bDiv);
             }
 
             fragment.appendChild(card);
@@ -251,35 +254,29 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsArea.appendChild(fragment);
     }
 
-    function getParents(code, isCDU) {
-        const potentialParents = new Set();
-        if (isCDU) {
-            for (let i = 1; i < code.length; i++) {
-                let part = code.substring(0, i);
-                if (part.endsWith('.')) part = part.slice(0, -1);
-                if (part.length > 0 && part !== code) potentialParents.add(part);
-            }
-            if (code.includes('.')) potentialParents.add(code.split('.')[0]);
-        } else {
-            if (code.length >= 3) potentialParents.add(code.charAt(0) + "00"); 
-            if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.add(code.substring(0, 2) + "0"); 
-            if (code.includes('.')) potentialParents.add(code.split('.')[0]);
-        }
-        potentialParents.delete(code);
-        return Array.from(potentialParents)
-            .map(pCode => dadosAtivos.find(d => d.code === pCode))
-            .filter(Boolean)
-            .sort((a, b) => a.code.length - b.code.length);
+    function getParentsCDD(code) {
+        const potential = [];
+        if (code.length >= 3) potential.push(code.charAt(0) + "00"); 
+        if (code.length >= 3 && !isNaN(code.substring(0,2))) potential.push(code.substring(0, 2) + "0");
+        if (code.includes('.')) potential.push(code.split('.')[0]);
+        return [...new Set(potential)].filter(p => p !== code).map(p => dadosAtivos.find(d => d.code === p)).filter(Boolean).sort((a,b) => a.code.length - b.code.length);
     }
 
-    // Eventos Gerais
-    searchInput.addEventListener('input', handleInput);
-    clearBtn.addEventListener('click', () => { searchInput.value = ''; searchInput.focus(); handleInput(); });
+    // --- 6. EVENTOS ---
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+        clearBtn.style.display = query.length > 0 ? 'block' : 'none';
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => performSearch(query), 300);
+    });
+
+    clearBtn.addEventListener('click', () => { searchInput.value = ''; handleInput(); searchInput.focus(); });
     
-    if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     themeBtn?.addEventListener('click', () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
     });
+
+    if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 });
