@@ -1,188 +1,211 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Elementos
-    const tabs = { search: document.getElementById('tabSearch'), browse: document.getElementById('tabBrowse') };
-    const views = { search: document.getElementById('viewSearch'), browse: document.getElementById('viewBrowse') };
+    
+    // --- ELEMENTOS ---
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
-    const browseList = document.getElementById('browseList');
-    const browseBreadcrumb = document.getElementById('browseBreadcrumb');
     const clearBtn = document.getElementById('clearBtn');
+    const themeBtn = document.getElementById('themeBtn');
+    const dbRadios = document.querySelectorAll('input[name="database"]');
+    
+    let debounceTimer;
+    
+    // --- 1 INICIALIZAÇÃO ---
+    // Carrega a base padrão (CDD) ou lista vazia se der erro
+    let dadosAtivos = (typeof baseCDD !== 'undefined') ? baseCDD : [];
 
-    let currentBrowsePath = []; 
+    if (typeof baseCDD === 'undefined' || typeof baseCDU === 'undefined') {
+        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Arquivos de dados não carregados.</div>';
+        return;
+    }
 
-    // --- 1. SINCRONIZAÇÃO DE BASES ---
-    // Faz com que mudar CDD/CDU em uma aba mude na outra também
-    document.querySelectorAll('input[name="dbType"]').forEach(radio => {
+    // --- 2 TROCA DE BASE ---
+    dbRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
-            const val = e.target.value;
-            document.querySelectorAll(`input[name="dbType"][value="${val}"]`).forEach(r => r.checked = true);
-            
-            // Reseta navegação ao trocar base
-            currentBrowsePath = [];
-            if (views.browse.style.display === 'block') renderBrowse();
-            if (searchInput.value) performSearch(searchInput.value);
+            searchInput.value = '';
+            resultsArea.innerHTML = '<div class="empty-state">Base alterada. Faça sua consulta!</div>';
+            clearBtn.style.display = 'none';
+
+            if (e.target.value === 'cdu') {
+                dadosAtivos = baseCDU;
+                searchInput.placeholder = "CDU: código ou termo...";
+            } else {
+                dadosAtivos = baseCDD;
+                searchInput.placeholder = "CDD: código ou assunto...";
+            }
+            searchInput.focus();
         });
     });
 
-    // --- 2. GESTÃO DE ABAS ---
-    tabs.search.onclick = () => switchView('search');
-    tabs.browse.onclick = () => switchView('browse');
-
-    function switchView(viewName) {
-        Object.keys(views).forEach(v => {
-            views[v].style.display = (v === viewName) ? 'block' : 'none';
-            tabs[v].classList.toggle('active', v === viewName);
-        });
-        if (viewName === 'browse') renderBrowse();
+    // --- 3 INPUT ---
+    function handleInput() {
+        const query = searchInput.value.trim();
+        clearBtn.style.display = query.length > 0 ? 'block' : 'none';
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => performSearch(query), 300); 
     }
 
-    // --- 3. LÓGICA DE NAVEGAÇÃO (BROWSE) ---
-    function renderBrowse() {
-        const isCDU = document.querySelector('input[name="dbType"]:checked').value === 'cdu';
-        const db = isCDU ? baseCDU : baseCDD;
-        let items = [];
-
-        if (isCDU) {
-            // Navegação no Objeto CDU
-            let level = db.principal;
-            currentBrowsePath.forEach(p => { if(level[p.code]?.children) level = level[p.code].children; });
-            items = Object.keys(level).map(k => ({ 
-                code: k, 
-                desc: level[k].desc, 
-                folder: !!level[k].children 
-            }));
-        } else {
-            // Navegação na Lista CDD (Lógica Decimal Corrigida)
-            const parent = currentBrowsePath.length > 0 ? currentBrowsePath[currentBrowsePath.length-1].code : '';
-            items = findDirectChildrenCDD(parent, db);
-        }
-        renderBrowseUI(items);
-    }
-
-    function findDirectChildrenCDD(parent, db) {
-        return db.filter(item => {
-            if (parent === '') return item.code.endsWith('00'); // Centenas (Raiz)
-            if (parent.endsWith('00')) {
-                // De 200 para 210, 220...
-                return item.code.startsWith(parent[0]) && item.code.endsWith('0') && item.code !== parent;
-            }
-            if (parent.endsWith('0')) {
-                // De 210 para 211, 212...
-                return item.code.startsWith(parent.substring(0, 2)) && !item.code.includes('.') && item.code !== parent;
-            }
-            // Subdivisões com ponto
-            return item.code.startsWith(parent + ".") && item.code.split('.').length === parent.split('.').length + 1;
-        }).map(item => ({
-            ...item,
-            // Verifica se este item tem "filhos" na lista
-            folder: db.some(c => {
-                if (item.code.endsWith('00')) return c.code.startsWith(item.code[0]) && c.code !== item.code;
-                if (item.code.endsWith('0')) return c.code.startsWith(item.code.substring(0,2)) && c.code !== item.code;
-                return c.code.startsWith(item.code + ".");
-            })
-        })).sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
-    }
-
-    function renderBrowseUI(items) {
-        browseBreadcrumb.innerHTML = '';
-        const home = document.createElement('span');
-        home.className = 'crumb'; home.innerText = '🏠 Início';
-        home.onclick = () => { currentBrowsePath = []; renderBrowse(); };
-        browseBreadcrumb.appendChild(home);
-
-        currentBrowsePath.forEach((p, i) => {
-            browseBreadcrumb.appendChild(document.createTextNode(' › '));
-            const span = document.createElement('span');
-            span.className = 'crumb'; span.innerText = p.code;
-            span.onclick = () => { currentBrowsePath = currentBrowsePath.slice(0, i+1); renderBrowse(); };
-            browseBreadcrumb.appendChild(span);
-        });
-
-        browseList.innerHTML = items.length ? '' : '<div class="empty-state">Sem subníveis.</div>';
-        items.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'folder-item';
-            div.innerHTML = `<span style="margin-right:12px; font-size:1.2rem;">${item.folder ? '📁' : '📄'}</span> <div class="folder-info"><b>${item.code}</b> <span>${item.desc}</span></div>`;
-            div.onclick = () => {
-                if (item.folder) { currentBrowsePath.push(item); renderBrowse(); }
-                else { 
-                    switchView('search'); 
-                    searchInput.value = item.code; 
-                    performSearch(item.code); 
-                    window.scrollTo(0,0);
-                }
-            };
-            browseList.appendChild(div);
-        });
-    }
-
-    // --- 4. MOTOR DE PROCURA ---
-    function performSearch(q) {
-        const isCDU = document.querySelector('input[name="dbType"]:checked').value === 'cdu';
-        const db = isCDU ? baseCDU : baseCDD;
-        const query = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // --- 4 BUSCA ---
+    function performSearch(query) {
+        const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        if (!q) { resultsArea.innerHTML = '<div class="empty-state">Introduza um termo para pesquisar.</div>'; return; }
-
-        let found = [];
-        if (isCDU) {
-            // Busca recursiva no objeto CDU
-            function traverse(nodes, path = []) {
-                for (const k in nodes) {
-                    const cleanDesc = nodes[k].desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    if (k.includes(query) || cleanDesc.includes(query)) 
-                        found.push({ code: k, desc: nodes[k].desc, path: [...path] });
-                    if (nodes[k].children) traverse(nodes[k].children, [...path, {code: k, desc: nodes[k].desc}]);
-                }
-            }
-            traverse(db.principal);
-        } else {
-            // Busca simples na lista CDD
-            found = db.filter(i => {
-                const cleanDesc = i.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return i.code.includes(query) || cleanDesc.includes(query);
-            }).map(i => ({ ...i, path: getCDDParents(i.code, db) }));
+        if (query.length === 0) {
+            resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
+            return;
         }
-        renderResultsUI(found, query, isCDU);
-    }
 
-    function renderResultsUI(results, q, isCDU) {
-        resultsArea.innerHTML = results.length ? '' : '<div class="empty-state">Nenhum resultado encontrado.</div>';
-        results.slice(0, 50).forEach(item => {
-            const firstDigit = item.code.replace(/[^0-9]/g, '').charAt(0) || '0';
-            const card = document.createElement('div');
-            card.className = `level-card class-${firstDigit}`;
-            
-            const pathHTML = item.path?.length ? 
-                `<div class="breadcrumb">📂 ${item.path.map(p => `<b>${p.code}</b> ${p.desc}`).join(' › ')}</div>` : '';
-
-            card.innerHTML = `
-                ${pathHTML}
-                <div class="level-tag">${isCDU ? 'CDU' : 'CDD'}</div>
-                <div class="level-code">${item.code}</div>
-                <div class="level-desc">${item.desc.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>')}</div>
-            `;
-            resultsArea.appendChild(card);
+        // Filtra na lista ativa (seja CDD ou CDU)
+        const results = dadosAtivos.filter(item => {
+            const code = item.code.toLowerCase();
+            const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
         });
+        
+        displayResults(results, normalizedQuery);
     }
 
-    function getCDDParents(code, db) {
-        const pts = [];
-        if (code.length >= 3) pts.push(code[0] + "00");
-        if (code.length >= 3 && !isNaN(code.substring(0,2))) pts.push(code.substring(0,2) + "0");
-        if (code.includes('.')) pts.push(code.split('.')[0]);
-        return [...new Set(pts)].filter(p => p !== code).map(p => db.find(d => d.code === p)).filter(Boolean);
+    // --- 5 EXIBIÇÃO (COM HIERARQUIA CLICÁVEL) ---
+    function displayResults(results, q) {
+        resultsArea.innerHTML = ''; 
+        if (results.length === 0) {
+            resultsArea.innerHTML = '<div class="empty-state">Nada encontrado.</div>';
+            return;
+        }
+        
+        const fragment = document.createDocumentFragment();
+        // Identifica qual base está selecionada para ajustar a lógica de pais
+        const isCDU = document.querySelector('input[name="database"]:checked').value === 'cdu';
+        const currentDbLabel = isCDU ? 'CDU' : 'CDD';
+
+        results.slice(0, 50).forEach(item => {
+            const mainClass = item.code.charAt(0);
+            // Define cor (usa cinza '0' se não começar com número)
+            const colorClass = (isNaN(mainClass) && mainClass !== '(' && mainClass !== '"') ? '0' : mainClass.replace(/[^0-9]/g, '').charAt(0) || '0';
+            
+            const card = document.createElement('div');
+            card.className = `level-card class-${colorClass}`;
+
+            // Grifa o termo buscado
+            const regex = new RegExp(`(${q})`, 'gi');
+            let highlightedDesc = item.desc;
+            try { highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>'); } catch(e){}
+
+            // Estrutura do Card
+            card.innerHTML = `
+                <span class="level-tag">${currentDbLabel}</span>
+                <div class="level-content">
+                    <div class="level-header">
+                        <span class="level-code">${item.code}</span>
+                    </div>
+                    <span class="level-desc">${highlightedDesc}</span>
+                </div>
+            `;
+
+            // --- CÁLCULO DOS PAIS (HIERARQUIA) ---
+            const parents = getParents(item.code, isCDU);
+            
+            if (parents.length > 0) {
+                // HTML Versão Curta (Linha única)
+                const shortHtml = parents.map(p => 
+                    `<span>${p.code} ${truncate(p.desc)}</span>`
+                ).join(' &rsaquo; ');
+
+                // HTML Versão Longa (Expandido verticalmente)
+                const fullHtml = parents.map(p => 
+                    `<div style="margin: 4px 0;"><strong>${p.code}</strong> ${p.desc}</div>`
+                ).join('<div style="color:var(--border); text-align:center; line-height:10px; font-size:12px;">↓</div>');
+
+                // Cria elemento clicável
+                const breadcrumbDiv = document.createElement('div');
+                breadcrumbDiv.className = 'breadcrumb';
+                breadcrumbDiv.innerHTML = shortHtml;
+                breadcrumbDiv.title = "Clique para ver a hierarquia completa";
+                
+                // Evento de Clique (Expandir/Recolher)
+                breadcrumbDiv.onclick = (e) => {
+                    e.stopPropagation(); // Impede clique fantasma
+                    
+                    if (breadcrumbDiv.innerHTML === shortHtml) {
+                        // EXPANDE
+                        breadcrumbDiv.innerHTML = fullHtml;
+                        breadcrumbDiv.style.whiteSpace = "normal";
+                        breadcrumbDiv.style.overflow = "visible";
+                        breadcrumbDiv.style.borderBottom = "1px solid var(--border)";
+                        breadcrumbDiv.style.paddingBottom = "8px";
+                        breadcrumbDiv.style.marginBottom = "8px";
+                    } else {
+                        // RECOLHE
+                        breadcrumbDiv.innerHTML = shortHtml;
+                        breadcrumbDiv.style.whiteSpace = "nowrap";
+                        breadcrumbDiv.style.overflow = "hidden";
+                        breadcrumbDiv.style.borderBottom = "none";
+                        breadcrumbDiv.style.paddingBottom = "4px";
+                        breadcrumbDiv.style.marginBottom = "0.5rem";
+                    }
+                };
+
+                // Insere no topo do card
+                card.querySelector('.level-content').prepend(breadcrumbDiv);
+            }
+
+            fragment.appendChild(card);
+        });
+
+        resultsArea.appendChild(fragment);
     }
 
-    // Eventos
-    searchInput.oninput = (e) => performSearch(e.target.value);
-    clearBtn.onclick = () => { searchInput.value = ''; performSearch(''); searchInput.focus(); };
+    // --- 6 FUNÇÕES AUXILIARES ---
+    
+    function getParents(code, isCDU) {
+        const potentialParents = new Set();
+        
+        if (isCDU) {
+            // Lógica para CDU: Fatiar o código (Prefixos)
+            // Ex: "004.2" -> tenta achar "0", "00", "004"
+            let accumulated = "";
+            // Remove pontos para iterar, mas reconstrói com cuidado se necessário. 
+            // Simplificação: gera substrings progressivas
+            for (let i = 1; i < code.length; i++) {
+                // Pega prefixos (ex: "0", "00")
+                let part = code.substring(0, i);
+                // Evita adicionar ponto sozinho
+                if (part.endsWith('.')) part = part.slice(0, -1);
+                if (part.length > 0 && part !== code) potentialParents.add(part);
+            }
+            // Garante que pega antes do ponto (ex: 331.1 -> 331)
+            if (code.includes('.')) potentialParents.add(code.split('.')[0]);
+
+        } else {
+            // Lógica para CDD: Baseada em centenas/dezenas (Decimal estrito)
+            if (code.length >= 3) potentialParents.add(code.charAt(0) + "00"); // 512 -> 500
+            if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.add(code.substring(0, 2) + "0"); // 512 -> 510
+            if (code.includes('.')) potentialParents.add(code.split('.')[0]);
+        }
+        
+        // Remove o próprio código da lista de pais
+        potentialParents.delete(code);
+
+        // Busca os códigos gerados no banco de dados real
+        return Array.from(potentialParents)
+            .map(pCode => dadosAtivos.find(d => d.code === pCode)) // Encontra o objeto
+            .filter(Boolean) // Remove nulos (códigos que não existem na base)
+            .sort((a, b) => a.code.length - b.code.length); // Ordena do mais curto (geral) para o longo (específico)
+    }
+
+    function truncate(str, n = 22) {
+        return (str.length > n) ? str.substr(0, n-1) + '...' : str;
+    }
+
+    // --- 7 EVENTOS GERAIS ---
+    searchInput.addEventListener('input', handleInput);
+    clearBtn.addEventListener('click', () => { searchInput.value = ''; searchInput.focus(); handleInput(); });
     
     // Tema
-    const themeBtn = document.getElementById('themeBtn');
-    themeBtn.onclick = () => {
+    if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    themeBtn?.addEventListener('click', () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    };
+    });
+
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
 });
