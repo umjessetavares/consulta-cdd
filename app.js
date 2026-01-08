@@ -26,10 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
             clearBtn.style.display = 'none';
 
             if (e.target.value === 'cdu') {
-                dadosAtivos = baseCDU; // Objeto (Árvore)
+                dadosAtivos = baseCDU; 
                 searchInput.placeholder = "CDU: código ou termo (ex: (81), 004...)";
             } else {
-                dadosAtivos = baseCDD; // Array (Lista)
+                dadosAtivos = baseCDD; 
                 searchInput.placeholder = "CDD: código ou assunto...";
             }
             searchInput.focus();
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         debounceTimer = setTimeout(() => performSearch(query), 300); 
     }
 
-    // --- 4. MOTOR DE BUSCA HÍBRIDO ---
+    // --- 4. BUSCA HÍBRIDA ---
     function performSearch(query) {
         const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
@@ -55,15 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let results = [];
 
-        // Verifica Tipo: Array (CDD) ou Objeto (CDU)
         if (Array.isArray(dadosAtivos)) {
+            // Busca CDD (Lista)
             results = dadosAtivos.filter(item => {
                 const code = item.code.toLowerCase();
                 const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
             });
         } else {
-            // Busca na Árvore CDU
+            // Busca CDU (Árvore)
             results = searchCDU(dadosAtivos, normalizedQuery);
         }
         
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function searchCDU(database, query) {
         let found = [];
 
-        // Busca auxiliares
+        // Auxiliares
         if (database.auxiliares) {
             found = found.concat(database.auxiliares.filter(item => {
                 const cleanDesc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
         }
 
-        // Busca na árvore principal
+        // Árvore Principal
         function traverse(nodes, path = []) {
             for (const key in nodes) {
                 const node = nodes[key];
@@ -91,11 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Se deu match
                 if (currentCode.toLowerCase().includes(query) || cleanDesc.includes(query)) {
-                    // Salva também o caminho (path) para usar no breadcrumb depois
                     found.push({ 
                         code: currentCode, 
                         desc: node.desc,
-                        path: [...path] // Cópia do caminho até aqui
+                        path: [...path] // Passa o histórico de pais
                     });
                 }
 
@@ -110,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return found;
     }
 
-    // --- 5. EXIBIÇÃO E BREADCRUMBS ---
+    // --- 5. EXIBIÇÃO (ATUALIZADO COM CLIQUE) ---
     function displayResults(results, q) {
         resultsArea.innerHTML = ''; 
         if (results.length === 0) {
@@ -125,73 +124,91 @@ document.addEventListener('DOMContentLoaded', () => {
             const mainClass = item.code.charAt(0);
             const colorClass = (isNaN(mainClass) && mainClass !== '(' && mainClass !== '"') ? '0' : mainClass.replace(/[^0-9]/g, '').charAt(0) || '0';
             
+            // Cria o container do card
             const card = document.createElement('div');
             card.className = `level-card class-${colorClass}`;
 
-            // --- GERAÇÃO DA HIERARQUIA (A Mágica acontece aqui) ---
-            let breadcrumbHTML = '';
-            
-            // Lógica CDD (Lista)
-            if (Array.isArray(dadosAtivos)) {
-                const parents = getCDDParents(item.code);
-                if (parents.length > 0) {
-                    // Formata: "000 Geral > 010 Bibliografias"
-                    const pathString = parents.map(p => 
-                        `<span title="${p.desc}">${p.code} ${truncate(p.desc)}</span>`
-                    ).join(' &rsaquo; ');
-                    
-                    breadcrumbHTML = `<div class="breadcrumb">${pathString}</div>`;
-                }
-            } 
-            // Lógica CDU (Árvore)
-            else if (item.path && item.path.length > 0) {
-                // O caminho já vem pronto da busca recursiva
-                const pathString = item.path.map(p => 
-                    `<span title="${p.desc}">${p.code} ${truncate(p.desc)}</span>`
-                ).join(' &rsaquo; ');
-                
-                breadcrumbHTML = `<div class="breadcrumb">${pathString}</div>`;
-            }
-
-            // Highlight
+            // Highlight do termo buscado na descrição principal
             const regex = new RegExp(`(${q})`, 'gi');
             let highlightedDesc = item.desc;
             try { highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>'); } catch(e){}
 
+            // Monta o HTML básico do card (sem o breadcrumb ainda)
             card.innerHTML = `
                 <span class="level-tag">${currentDbName}</span>
                 <div class="level-content">
-                    ${breadcrumbHTML}
                     <div class="level-header">
                         <span class="level-code">${item.code}</span>
                     </div>
                     <span class="level-desc">${highlightedDesc}</span>
                 </div>
             `;
+
+            // --- LÓGICA DO BREADCRUMB INTERATIVO ---
+            let parents = [];
+            
+            // Recupera pais (CDD ou CDU)
+            if (Array.isArray(dadosAtivos)) {
+                parents = getCDDParents(item.code);
+            } else if (item.path) {
+                parents = item.path;
+            }
+
+            // Se houver pais, cria o elemento clicável e insere no card
+            if (parents.length > 0) {
+                // Versão Curta (Truncada)
+                const shortHtml = parents.map(p => 
+                    `<span>${p.code} ${truncate(p.desc)}</span>`
+                ).join(' &rsaquo; ');
+
+                // Versão Longa (Completa)
+                const fullHtml = parents.map(p => 
+                    `<span><strong>${p.code}</strong> ${p.desc}</span>`
+                ).join('<br>↓<br>'); // Usa setas verticais para ficar bonito quando aberto
+
+                // Cria o elemento DIV via JS para garantir segurança dos eventos
+                const breadcrumbDiv = document.createElement('div');
+                breadcrumbDiv.className = 'breadcrumb';
+                breadcrumbDiv.innerHTML = shortHtml; // Começa curto
+                breadcrumbDiv.title = "Clique para ver o caminho completo";
+                
+                // Evento de Clique (Toggle)
+                breadcrumbDiv.onclick = (e) => {
+                    e.stopPropagation(); // Evita bolhas de evento indesejadas
+                    if (breadcrumbDiv.innerHTML === shortHtml) {
+                        breadcrumbDiv.innerHTML = fullHtml;
+                        breadcrumbDiv.style.whiteSpace = "normal"; // Permite quebra de linha
+                    } else {
+                        breadcrumbDiv.innerHTML = shortHtml;
+                        breadcrumbDiv.style.whiteSpace = "nowrap"; // Volta para linha única
+                    }
+                };
+
+                // Insere o breadcrumb no topo do conteúdo do card
+                card.querySelector('.level-content').prepend(breadcrumbDiv);
+            }
+
             fragment.appendChild(card);
         });
 
         resultsArea.appendChild(fragment);
     }
 
-    // --- 6. FUNÇÕES AUXILIARES ---
+    // --- 6. AUXILIARES ---
     
-    // Calcula os pais para CDD baseado na lógica decimal
     function getCDDParents(code) {
         const potentialParents = [];
-        if (code.length >= 3) potentialParents.push(code.charAt(0) + "00"); // ex: 300
-        if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.push(code.substring(0, 2) + "0"); // ex: 330
-        if (code.includes('.')) potentialParents.push(code.split('.')[0]); // ex: 331
+        if (code.length >= 3) potentialParents.push(code.charAt(0) + "00"); 
+        if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.push(code.substring(0, 2) + "0");
+        if (code.includes('.')) potentialParents.push(code.split('.')[0]);
         
-        // Remove duplicatas e o próprio código, e busca os objetos reais
         return [...new Set(potentialParents)]
             .filter(p => p !== code)
             .map(p => dadosAtivos.find(d => d.code === p))
-            .filter(Boolean); // Remove nulos se não achar
+            .filter(Boolean);
     }
 
-    // Corta textos muito longos para caber no celular
-    function truncate(str, n = 20) {
+    function truncate(str, n = 25) { // Aumentei um pouco o limite
         return (str.length > n) ? str.substr(0, n-1) + '...' : str;
     }
 
@@ -199,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', handleInput);
     clearBtn.addEventListener('click', () => { searchInput.value = ''; searchInput.focus(); handleInput(); });
     
-    // Tema e PWA (mantidos iguais)
     if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     themeBtn?.addEventListener('click', () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
