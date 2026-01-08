@@ -1,67 +1,51 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2563eb">
-    <meta name="description" content="Consulta rápida de códigos CDD e CDU.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
     <title>Consulta CDD/CDU</title>
-    
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/png" href="icon-192.png">
 </head>
-    
 <body>
 <div class="container">
-    <button id="themeBtn" class="theme-btn" aria-label="Alternar tema">🌙</button>
-    
-    <h1>Busca CDD/CDU</h1>
-    
-    <div class="db-selector">
-        <label class="radio-label">
-            <input type="radio" name="database" value="cdd" checked>
-            CDD
-        </label>
-        <label class="radio-label">
-            <input type="radio" name="database" value="cdu">
-            CDU
-        </label>
+    <button id="themeBtn" class="theme-btn">🌙</button>
+    <h1>Consulta CDD/CDU</h1>
+
+    <div class="view-tabs">
+        <button id="tabSearch" class="tab-btn active">🔍 Procura</button>
+        <button id="tabBrowse" class="tab-btn">📂 Navegação</button>
     </div>
 
-    <div class="input-group">
-        <div class="search-wrapper">
-            <input 
-                type="text" 
-                id="searchInput" 
-                placeholder="Buscar na CDD..." 
-                autocomplete="off" 
-                aria-label="Buscar código"
-                maxlength="50"
-            >
-            <button id="clearBtn" class="clear-btn" aria-label="Limpar busca">✕</button>
+    <div id="viewSearch" class="view-content">
+        <div class="db-selector">
+            <label class="radio-label"><input type="radio" name="dbSearch" value="cdd" checked> CDD</label>
+            <label class="radio-label"><input type="radio" name="dbSearch" value="cdu"> CDU</label>
         </div>
-        <button id="browseBtn" class="browse-btn" title="Navegar por Tópicos">📂</button>
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="Digite código ou assunto...">
+            <button id="clearBtn" class="clear-btn">✕</button>
+        </div>
+        <div id="resultsArea" class="results">
+            <div class="empty-state">Introduza um termo para pesquisar.</div>
+        </div>
     </div>
 
-    <div id="browseArea" class="browse-container" style="display: none;">
-        <div id="browseBreadcrumb" class="browse-breadcrumb"></div>
-        <div id="browseList" class="browse-list"></div>
-    </div>
-
-    <div id="resultsArea" class="results">
-        <div class="empty-state">Digite algo ou clique em 📂 para explorar.</div>
+    <div id="viewBrowse" class="view-content" style="display: none;">
+        <div class="db-selector">
+            <label class="radio-label"><input type="radio" name="dbBrowse" value="cdd" checked> CDD</label>
+            <label class="radio-label"><input type="radio" name="dbBrowse" value="cdu"> CDU</label>
+        </div>
+        <div class="browse-container">
+            <div id="browseBreadcrumb" class="browse-breadcrumb"></div>
+            <div id="browseList" class="browse-list"></div>
+        </div>
     </div>
 </div>
 
 <script src="dados_cdd.js"></script>
 <script src="dados_cdu.js"></script>
 <script src="app.js"></script>
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./service-worker.js');
-    }
-</script>
 </body>
 </html>
