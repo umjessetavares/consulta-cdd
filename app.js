@@ -10,10 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let debounceTimer;
     
     // --- 1. INICIALIZAÇÃO ---
+    // Verifica se as bases foram carregadas via HTML
     let dadosAtivos = (typeof baseCDD !== 'undefined') ? baseCDD : [];
 
     if (typeof baseCDD === 'undefined' || typeof baseCDU === 'undefined') {
-        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Arquivos de dados não carregados.</div>';
+        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Arquivos de dados (CDD/CDU) não carregados.</div>';
         return;
     }
 
@@ -25,10 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
             clearBtn.style.display = 'none';
 
             if (e.target.value === 'cdu') {
-                dadosAtivos = baseCDU; // É um Objeto (Árvore)
+                dadosAtivos = baseCDU; // Agora trata como Lista (baseado no seu último arquivo)
                 searchInput.placeholder = "CDU: código ou termo...";
             } else {
-                dadosAtivos = baseCDD; // É um Array (Lista)
+                dadosAtivos = baseCDD;
                 searchInput.placeholder = "CDD: código ou assunto...";
             }
             searchInput.focus();
@@ -43,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         debounceTimer = setTimeout(() => performSearch(query), 300); 
     }
 
-    // --- 4. MOTOR DE BUSCA HÍBRIDO ---
+    // --- 4. BUSCA ---
     function performSearch(query) {
         const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
@@ -52,68 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let results = [];
-
-        // VERIFICA SE É ARRAY (CDD) OU OBJETO (CDU)
-        if (Array.isArray(dadosAtivos)) {
-            // BUSCA SIMPLES (CDD)
-            results = dadosAtivos.filter(item => {
-                const code = item.code.toLowerCase();
-                const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
-            });
-        } else {
-            // BUSCA RECURSIVA NA ÁRVORE (CDU)
-            results = searchCDU(dadosAtivos, normalizedQuery);
-        }
+        // Busca unificada (ambos são listas)
+        const results = dadosAtivos.filter(item => {
+            const code = item.code.toLowerCase();
+            const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
+        });
         
         displayResults(results, normalizedQuery);
-    }
-
-    // Função Especial para Varrer a Árvore CDU
-    function searchCDU(database, query) {
-        let found = [];
-
-        // 1. Busca nas Tabelas Auxiliares
-        if (database.auxiliares) {
-            const auxResults = database.auxiliares.filter(item => {
-                const cleanDesc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return item.code.toLowerCase().includes(query) || cleanDesc.includes(query);
-            });
-            // Adiciona propriedade 'path' vazia para auxiliares
-            found = found.concat(auxResults.map(r => ({...r, path: []})));
-        }
-
-        // 2. Busca na Hierarquia Principal (Recursiva)
-        function traverse(nodes, currentPath = []) {
-            for (const key in nodes) {
-                const node = nodes[key];
-                const cleanDesc = node.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                
-                // Cria o objeto do nó atual
-                const currentNode = { code: key, desc: node.desc };
-
-                // Se deu match no código ou descrição
-                if (key.toLowerCase().includes(query) || cleanDesc.includes(query)) {
-                    found.push({
-                        code: key,
-                        desc: node.desc,
-                        path: [...currentPath] // Salva o caminho até aqui
-                    });
-                }
-
-                // Continua descendo se tiver filhos
-                if (node.children) {
-                    traverse(node.children, [...currentPath, currentNode]);
-                }
-            }
-        }
-
-        if (database.principal) {
-            traverse(database.principal);
-        }
-
-        return found;
     }
 
     // --- 5. EXIBIÇÃO ---
@@ -125,8 +72,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const fragment = document.createDocumentFragment();
-        const currentDbName = document.querySelector('input[name="database"]:checked').value.toUpperCase();
+        const isCDU = document.querySelector('input[name="database"]:checked').value === 'cdu';
+        const currentDbLabel = isCDU ? 'CDU' : 'CDD';
 
+        // Limita resultados para performance
         results.slice(0, 50).forEach(item => {
             const mainClass = item.code.charAt(0);
             const colorClass = (isNaN(mainClass) && mainClass !== '(' && mainClass !== '"') ? '0' : mainClass.replace(/[^0-9]/g, '').charAt(0) || '0';
@@ -134,13 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = `level-card class-${colorClass}`;
 
-            // Highlight
+            // Highlight do termo
             const regex = new RegExp(`(${q})`, 'gi');
             let highlightedDesc = item.desc;
             try { highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>'); } catch(e){}
 
+            // Estrutura Básica
             card.innerHTML = `
-                <span class="level-tag">${currentDbName}</span>
+                <span class="level-tag">${currentDbLabel}</span>
                 <div class="level-content">
                     <div class="level-header">
                         <span class="level-code">${item.code}</span>
@@ -149,55 +99,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            // --- LÓGICA DO BREADCRUMB (PAIS) ---
-            let parents = [];
-
-            // Se for CDD (Lista), calcula os pais
-            if (Array.isArray(dadosAtivos)) {
-                parents = getCDDParents(item.code);
-            } 
-            // Se for CDU (Objeto), usa o caminho que a busca recursiva já encontrou
-            else if (item.path) {
-                parents = item.path;
-            }
-
-            // Se houver pais, cria o elemento clicável
+            // --- LÓGICA DO BREADCRUMB (Caminho Completo) ---
+            const parents = getParents(item.code, isCDU);
+            
             if (parents.length > 0) {
-                // Versão Curta
-                const shortHtml = parents.map(p => 
-                    `<span>${p.code} ${truncate(p.desc)}</span>`
-                ).join(' &rsaquo; ');
+                // Monta o HTML com o texto COMPLETO (sem cortes)
+                const fullPathHTML = parents.map(p => 
+                    `<span>${p.code} ${p.desc}</span>`
+                ).join(' &rsaquo; '); // Seta separadora
 
-                // Versão Longa (Expandida)
-                const fullHtml = parents.map(p => 
-                    `<div style="margin: 4px 0;"><strong>${p.code}</strong> ${p.desc}</div>`
-                ).join('<div style="color:var(--border); text-align:center; line-height:10px; font-size:12px;">↓</div>');
-
+                // Cria elemento visual
                 const breadcrumbDiv = document.createElement('div');
                 breadcrumbDiv.className = 'breadcrumb';
-                breadcrumbDiv.innerHTML = shortHtml;
-                breadcrumbDiv.title = "Clique para ver a hierarquia completa";
+                breadcrumbDiv.innerHTML = fullPathHTML; // Insere o caminho direto
                 
-                // Evento de Clique
-                breadcrumbDiv.onclick = (e) => {
-                    e.stopPropagation();
-                    if (breadcrumbDiv.innerHTML === shortHtml) {
-                        breadcrumbDiv.innerHTML = fullHtml;
-                        breadcrumbDiv.style.whiteSpace = "normal";
-                        breadcrumbDiv.style.overflow = "visible";
-                        breadcrumbDiv.style.borderBottom = "1px solid var(--border)";
-                        breadcrumbDiv.style.paddingBottom = "8px";
-                        breadcrumbDiv.style.marginBottom = "8px";
-                    } else {
-                        breadcrumbDiv.innerHTML = shortHtml;
-                        breadcrumbDiv.style.whiteSpace = "nowrap";
-                        breadcrumbDiv.style.overflow = "hidden";
-                        breadcrumbDiv.style.borderBottom = "none";
-                        breadcrumbDiv.style.paddingBottom = "4px";
-                        breadcrumbDiv.style.marginBottom = "0.5rem";
-                    }
-                };
-
                 // Insere no topo do card
                 card.querySelector('.level-content').prepend(breadcrumbDiv);
             }
@@ -208,30 +123,39 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsArea.appendChild(fragment);
     }
 
-    // --- 6. AUXILIARES ---
-    
-    // Calcula pais apenas para a CDD (Lista Plana)
-    function getCDDParents(code) {
-        const potentialParents = [];
-        if (code.length >= 3) potentialParents.push(code.charAt(0) + "00"); 
-        if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.push(code.substring(0, 2) + "0");
-        if (code.includes('.')) potentialParents.push(code.split('.')[0]);
+    // --- 6. FUNÇÕES AUXILIARES ---
+    function getParents(code, isCDU) {
+        const potentialParents = new Set();
         
-        return [...new Set(potentialParents)]
-            .filter(p => p !== code)
-            .map(p => dadosAtivos.find(d => d.code === p))
-            .filter(Boolean)
-            .sort((a, b) => a.code.length - b.code.length);
-    }
+        if (isCDU) {
+            // Lógica CDU: Fatiar prefixos (Ex: 004 -> busca 00 -> busca 0)
+            for (let i = 1; i < code.length; i++) {
+                let part = code.substring(0, i);
+                if (part.endsWith('.')) part = part.slice(0, -1); // Remove ponto final solto
+                if (part.length > 0 && part !== code) potentialParents.add(part);
+            }
+            if (code.includes('.')) potentialParents.add(code.split('.')[0]); // Garante o nível antes do ponto
+        } else {
+            // Lógica CDD: Decimal Estrito (Ex: 331 -> 330 -> 300)
+            if (code.length >= 3) potentialParents.add(code.charAt(0) + "00"); 
+            if (code.length >= 3 && !isNaN(code.substring(0,2))) potentialParents.add(code.substring(0, 2) + "0"); 
+            if (code.includes('.')) potentialParents.add(code.split('.')[0]);
+        }
+        
+        potentialParents.delete(code); // Remove o próprio item
 
-    function truncate(str, n = 22) {
-        return (str.length > n) ? str.substr(0, n-1) + '...' : str;
+        // Busca os objetos completos na base de dados
+        return Array.from(potentialParents)
+            .map(pCode => dadosAtivos.find(d => d.code === pCode))
+            .filter(Boolean) // Remove nulos
+            .sort((a, b) => a.code.length - b.code.length); // Ordena do menor para o maior
     }
 
     // --- 7. EVENTOS GERAIS ---
     searchInput.addEventListener('input', handleInput);
     clearBtn.addEventListener('click', () => { searchInput.value = ''; searchInput.focus(); handleInput(); });
     
+    // Tema Escuro
     if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     themeBtn?.addEventListener('click', () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -239,5 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
     });
 
+    // PWA Cache
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
 });
