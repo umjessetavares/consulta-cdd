@@ -1,282 +1,158 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- ELEMENTOS DO DOM ---
+    // Elementos de Interface
+    const tabs = { search: document.getElementById('tabSearch'), browse: document.getElementById('tabBrowse') };
+    const views = { search: document.getElementById('viewSearch'), browse: document.getElementById('viewBrowse') };
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
-    const clearBtn = document.getElementById('clearBtn');
-    const themeBtn = document.getElementById('themeBtn');
-    const dbRadios = document.querySelectorAll('input[name="database"]');
-    const browseBtn = document.getElementById('browseBtn');
-    const browseArea = document.getElementById('browseArea');
     const browseList = document.getElementById('browseList');
     const browseBreadcrumb = document.getElementById('browseBreadcrumb');
-    
-    let debounceTimer;
-    let isBrowseMode = false;
-    let currentBrowsePath = []; // Histórico de navegação (objetos {code, desc})
-    
-    // --- 1. INICIALIZAÇÃO ---
-    let dadosAtivos = (typeof baseCDD !== 'undefined') ? baseCDD : [];
+    const clearBtn = document.getElementById('clearBtn');
 
-    if (typeof baseCDD === 'undefined' || typeof baseCDU === 'undefined') {
-        resultsArea.innerHTML = '<div class="empty-state" style="color:red">Erro: Bases de dados não carregadas.</div>';
-        return;
-    }
+    let currentBrowsePath = []; // Array de {code, desc}
 
-    // --- 2. TROCA DE BASE E RESET ---
-    dbRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            resetInterface();
-            if (e.target.value === 'cdu') {
-                dadosAtivos = baseCDU; // Estrutura de Objeto/Árvore
-                searchInput.placeholder = "CDU: código ou termo...";
-            } else {
-                dadosAtivos = baseCDD; // Estrutura de Array/Lista
-                searchInput.placeholder = "CDD: código ou assunto...";
-            }
+    // --- 1. GESTÃO DE ABAS ---
+    tabs.search.onclick = () => switchView('search');
+    tabs.browse.onclick = () => switchView('browse');
+
+    function switchView(viewName) {
+        Object.keys(views).forEach(v => {
+            views[v].style.display = (v === viewName) ? 'block' : 'none';
+            tabs[v].classList.toggle('active', v === viewName);
         });
-    });
-
-    function resetInterface() {
-        searchInput.value = '';
-        clearBtn.style.display = 'none';
-        isBrowseMode = false;
-        browseBtn.classList.remove('active');
-        browseArea.style.display = 'none';
-        resultsArea.style.display = 'flex';
-        resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
+        if (viewName === 'browse') renderBrowse();
     }
 
-    // --- 3. MODO NAVEGAÇÃO (BROWSE) ---
-    browseBtn.addEventListener('click', () => {
-        isBrowseMode = !isBrowseMode;
-        browseBtn.classList.toggle('active');
-        
-        if (isBrowseMode) {
-            resultsArea.style.display = 'none';
-            browseArea.style.display = 'block';
-            currentBrowsePath = [];
-            renderBrowseLevel(); // Inicia na raiz
-        } else {
-            resultsArea.style.display = 'flex';
-            browseArea.style.display = 'none';
-            searchInput.focus();
-        }
-    });
-
-    function renderBrowseLevel() {
-        const isCDU = !Array.isArray(dadosAtivos);
+    // --- 2. LÓGICA DE NAVEGAÇÃO (BROWSE) ---
+    function renderBrowse() {
+        const isCDU = document.querySelector('input[name="dbBrowse"]:checked').value === 'cdu';
+        const db = isCDU ? baseCDU : baseCDD;
         let items = [];
 
         if (isCDU) {
-            // Lógica para CDU (Navegar no Objeto)
-            let currentLevel = dadosAtivos.principal;
-            // Percorre o caminho até o nível atual
-            currentBrowsePath.forEach(step => {
-                if (currentLevel[step.code] && currentLevel[step.code].children) {
-                    currentLevel = currentLevel[step.code].children;
-                }
-            });
-            // Transforma as chaves do nível atual em itens para a lista
-            items = Object.keys(currentLevel).map(key => ({
-                code: key,
-                desc: currentLevel[key].desc,
-                hasChildren: !!currentLevel[key].children
-            }));
+            // Navegação no Objeto CDU
+            let level = db.principal;
+            currentBrowsePath.forEach(p => { if(level[p.code]) level = level[p.code].children; });
+            items = Object.keys(level).map(k => ({ code: k, desc: level[k].desc, folder: !!level[k].children }));
         } else {
-            // Lógica para CDD (Navegar na Lista Plana)
-            const parentCode = currentBrowsePath.length > 0 ? currentBrowsePath[currentBrowsePath.length - 1].code : '';
-            items = findDirectChildrenCDD(parentCode);
+            // Navegação na Lista CDD (Hierarquia Simulada)
+            const parent = currentBrowsePath.length > 0 ? currentBrowsePath[currentBrowsePath.length-1].code : '';
+            items = db.filter(item => {
+                if (parent === '') return item.code.length === 3 && item.code.endsWith('00');
+                if (parent.endsWith('00')) return item.code.startsWith(parent[0]) && item.code.endsWith('0') && item.code !== parent;
+                if (parent.endsWith('0')) return item.code.startsWith(parent.substring(0,2)) && !item.code.includes('.') && item.code !== parent;
+                return item.code.startsWith(parent + ".") && item.code.split('.').length === parent.split('.').length + 1;
+            }).map(item => ({ ...item, folder: db.some(c => c.code.startsWith(item.code) && c.code !== item.code) }));
         }
 
-        updateBrowseUI(items);
+        renderBrowseUI(items);
     }
 
-    function updateBrowseUI(items) {
-        // Atualiza Breadcrumb da Navegação
+    function renderBrowseUI(items) {
+        // Breadcrumb
         browseBreadcrumb.innerHTML = '';
         const home = document.createElement('span');
-        home.className = 'crumb';
-        home.innerText = '🏠 Início';
-        home.onclick = () => { currentBrowsePath = []; renderBrowseLevel(); };
+        home.className = 'crumb'; home.innerText = '🏠 Início';
+        home.onclick = () => { currentBrowsePath = []; renderBrowse(); };
         browseBreadcrumb.appendChild(home);
 
-        currentBrowsePath.forEach((step, index) => {
+        currentBrowsePath.forEach((p, i) => {
             browseBreadcrumb.appendChild(document.createTextNode(' › '));
             const span = document.createElement('span');
-            span.className = 'crumb';
-            span.innerText = step.code;
-            span.onclick = () => {
-                currentBrowsePath = currentBrowsePath.slice(0, index + 1);
-                renderBrowseLevel();
-            };
+            span.className = 'crumb'; span.innerText = p.code;
+            span.onclick = () => { currentBrowsePath = currentBrowsePath.slice(0, i+1); renderBrowse(); };
             browseBreadcrumb.appendChild(span);
         });
 
-        // Renderiza Lista de Itens (Pastas/Arquivos)
-        browseList.innerHTML = '';
-        if (items.length === 0) {
-            browseList.innerHTML = '<div class="empty-state">Fim da hierarquia.</div>';
-            return;
-        }
-
+        // Lista
+        browseList.innerHTML = items.length ? '' : '<div class="empty-state">Sem subníveis.</div>';
         items.forEach(item => {
             const div = document.createElement('div');
-            div.className = `folder-item ${item.hasChildren ? 'has-children' : 'is-leaf'}`;
+            div.className = 'folder-item';
+            div.innerHTML = `<span style="margin-right:10px">${item.folder ? '📁' : '📄'}</span> <div><b>${item.code}</b> ${item.desc}</div>`;
             div.onclick = () => {
-                if (item.hasChildren) {
+                if (item.folder) {
                     currentBrowsePath.push(item);
-                    renderBrowseLevel();
+                    renderBrowse();
                 } else {
-                    // Se for item final, joga para a busca para ver detalhes
-                    isBrowseMode = false;
-                    browseBtn.classList.remove('active');
-                    browseArea.style.display = 'none';
-                    resultsArea.style.display = 'flex';
+                    switchView('search');
                     searchInput.value = item.code;
                     performSearch(item.code);
                 }
             };
-
-            div.innerHTML = `
-                <span class="folder-icon">${item.hasChildren ? '📁' : '📄'}</span>
-                <div class="folder-info">
-                    <span class="folder-code">${item.code}</span>
-                    <span class="folder-desc">${item.desc}</span>
-                </div>
-            `;
             browseList.appendChild(div);
         });
     }
 
-    // Auxiliar para encontrar filhos na CDD (Lista Plana)
-    function findDirectChildrenCDD(parentCode) {
-        return dadosAtivos.filter(item => {
-            if (parentCode === '') return item.code.length === 3 && item.code.endsWith('00');
-            if (parentCode.endsWith('00')) return item.code.startsWith(parentCode[0]) && item.code.endsWith('0') && item.code !== parentCode;
-            if (parentCode.endsWith('0')) return item.code.startsWith(parentCode.substring(0, 2)) && !item.code.includes('.') && item.code !== parentCode;
-            return item.code.startsWith(parentCode + ".") && item.code.split('.').length === parentCode.split('.').length + 1;
-        }).map(item => ({
-            ...item,
-            hasChildren: dadosAtivos.some(child => child.code.startsWith(item.code) && child.code !== item.code)
-        })).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-    }
-
-    // --- 4. MOTOR DE BUSCA (HÍBRIDO) ---
-    function performSearch(query) {
-        if (isBrowseMode) return;
-        const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // --- 3. LÓGICA DE PROCURA ---
+    function performSearch(q) {
+        const isCDU = document.querySelector('input[name="dbSearch"]:checked').value === 'cdu';
+        const db = isCDU ? baseCDU : baseCDD;
+        const query = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        if (query.length === 0) {
-            resultsArea.innerHTML = '<div class="empty-state">Faça sua consulta!</div>';
-            return;
-        }
+        if (!q) { resultsArea.innerHTML = '<div class="empty-state">Introduza um termo.</div>'; return; }
 
-        let results = [];
-        if (Array.isArray(dadosAtivos)) {
-            // Busca Simples (CDD)
-            results = dadosAtivos.filter(item => {
-                const code = item.code.toLowerCase();
-                const desc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return code.includes(normalizedQuery) || desc.includes(normalizedQuery);
-            });
-        } else {
-            // Busca Recursiva (CDU - Objeto)
-            results = searchCDU(dadosAtivos, normalizedQuery);
-        }
-        
-        displayResults(results, normalizedQuery);
-    }
-
-    function searchCDU(database, query) {
         let found = [];
-        if (database.auxiliares) {
-            found = found.concat(database.auxiliares.filter(item => {
-                const cleanDesc = item.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return item.code.toLowerCase().includes(query) || cleanDesc.includes(query);
-            }).map(r => ({...r, path: []})));
+        if (isCDU) {
+            // Busca recursiva na CDU
+            function traverse(nodes, path = []) {
+                for (const k in nodes) {
+                    if (k.includes(query) || nodes[k].desc.toLowerCase().includes(query)) 
+                        found.push({ code: k, desc: nodes[k].desc, path: [...path] });
+                    if (nodes[k].children) traverse(nodes[k].children, [...path, {code: k, desc: nodes[k].desc}]);
+                }
+            }
+            traverse(db.principal);
+        } else {
+            // Busca na CDD + Cálculo de Pais
+            found = db.filter(i => i.code.includes(query) || i.desc.toLowerCase().includes(query))
+                      .map(i => ({ ...i, path: getCDDParents(i.code, db) }));
         }
 
-        function traverse(nodes, currentPath = []) {
-            for (const key in nodes) {
-                const node = nodes[key];
-                const cleanDesc = node.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                if (key.toLowerCase().includes(query) || cleanDesc.includes(query)) {
-                    found.push({ code: key, desc: node.desc, path: [...currentPath] });
-                }
-                if (node.children) traverse(node.children, [...currentPath, {code: key, desc: node.desc}]);
-            }
-        }
-        if (database.principal) traverse(database.principal);
-        return found;
+        renderResultsUI(found, query, isCDU);
     }
 
-    // --- 5. RENDERIZAÇÃO DE RESULTADOS ---
-    function displayResults(results, q) {
-        resultsArea.innerHTML = ''; 
-        if (results.length === 0) {
-            resultsArea.innerHTML = '<div class="empty-state">Nada encontrado.</div>';
-            return;
-        }
-        
-        const isCDU = !Array.isArray(dadosAtivos);
-        const fragment = document.createDocumentFragment();
-
+    function renderResultsUI(results, q, isCDU) {
+        resultsArea.innerHTML = results.length ? '' : '<div class="empty-state">Nada encontrado.</div>';
         results.slice(0, 50).forEach(item => {
-            const mainClass = item.code.charAt(0);
-            const colorClass = (isNaN(mainClass) && mainClass !== '(' && mainClass !== '"') ? '0' : mainClass.replace(/[^0-9]/g, '').charAt(0) || '0';
+            const color = item.code.replace(/[^0-9]/g, '').charAt(0) || '0';
             const card = document.createElement('div');
-            card.className = `level-card class-${colorClass}`;
-
-            const regex = new RegExp(`(${q})`, 'gi');
-            let highlightedDesc = item.desc.replace(regex, '<mark>$1</mark>');
+            card.className = `level-card class-${color}`;
+            
+            const breadcrumbHTML = item.path?.length ? 
+                `<div class="breadcrumb">📂 ${item.path.map(p => `${p.code} ${p.desc}`).join(' › ')}</div>` : '';
 
             card.innerHTML = `
-                <span class="level-tag">${isCDU ? 'CDU' : 'CDD'}</span>
-                <div class="level-content">
-                    <div class="level-header"><span class="level-code">${item.code}</span></div>
-                    <span class="level-desc">${highlightedDesc}</span>
-                </div>
+                ${breadcrumbHTML}
+                <div class="level-tag">${isCDU ? 'CDU' : 'CDD'}</div>
+                <div class="level-code">${item.code}</div>
+                <div class="level-desc">${item.desc.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>')}</div>
             `;
-
-            // Breadcrumb do resultado (Caminho Completo)
-            let parents = isCDU ? (item.path || []) : getParentsCDD(item.code);
-            if (parents.length > 0) {
-                const pathHTML = parents.map(p => `<span>${p.code} ${p.desc}</span>`).join(' &rsaquo; ');
-                const bDiv = document.createElement('div');
-                bDiv.className = 'breadcrumb';
-                bDiv.innerHTML = pathHTML;
-                card.querySelector('.level-content').prepend(bDiv);
-            }
-
-            fragment.appendChild(card);
+            resultsArea.appendChild(card);
         });
-        resultsArea.appendChild(fragment);
     }
 
-    function getParentsCDD(code) {
-        const potential = [];
-        if (code.length >= 3) potential.push(code.charAt(0) + "00"); 
-        if (code.length >= 3 && !isNaN(code.substring(0,2))) potential.push(code.substring(0, 2) + "0");
-        if (code.includes('.')) potential.push(code.split('.')[0]);
-        return [...new Set(potential)].filter(p => p !== code).map(p => dadosAtivos.find(d => d.code === p)).filter(Boolean).sort((a,b) => a.code.length - b.code.length);
+    function getCDDParents(code, db) {
+        const pts = [];
+        if (code.length >= 3) pts.push(code[0] + "00");
+        if (code.length >= 3 && !isNaN(code.substring(0,2))) pts.push(code.substring(0,2) + "0");
+        if (code.includes('.')) pts.push(code.split('.')[0]);
+        return [...new Set(pts)].filter(p => p !== code).map(p => db.find(d => d.code === p)).filter(Boolean);
     }
 
-    // --- 6. EVENTOS ---
-    searchInput.addEventListener('input', () => {
-        const query = searchInput.value.trim();
-        clearBtn.style.display = query.length > 0 ? 'block' : 'none';
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => performSearch(query), 300);
-    });
-
-    clearBtn.addEventListener('click', () => { searchInput.value = ''; handleInput(); searchInput.focus(); });
+    // Eventos
+    searchInput.oninput = (e) => {
+        clearBtn.style.display = e.target.value ? 'block' : 'none';
+        performSearch(e.target.value);
+    };
+    clearBtn.onclick = () => { searchInput.value = ''; performSearch(''); searchInput.focus(); };
+    document.querySelectorAll('input[name="dbBrowse"]').forEach(r => r.onchange = () => { currentBrowsePath = []; renderBrowse(); });
     
-    themeBtn?.addEventListener('click', () => {
+    // Tema
+    const themeBtn = document.getElementById('themeBtn');
+    themeBtn.onclick = () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    });
-
+    };
     if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 });
