@@ -39,7 +39,7 @@ body {
     transition: background-color 0.3s;
 }
 
-/* --- ESTILO DO BOTÃO TEMA --- */
+/* --- BOTÃO TEMA --- */
 .theme-btn {
     position: absolute;
     top: 1.5rem;
@@ -72,7 +72,7 @@ p.subtitle {
     text-align: center;
 }
 
-/* --- SELETOR DE BASE (CDD / CDU) --- */
+/* --- SELETOR DE BASE --- */
 .db-selector {
     display: flex;
     justify-content: center;
@@ -116,7 +116,7 @@ input[type="radio"] {
     cursor: pointer;
 }
 
-/* --- INPUT E BUSCA --- */
+/* --- INPUT --- */
 .search-wrapper {
     position: relative;
     display: flex;
@@ -155,7 +155,7 @@ input:focus {
     border-radius: 50%;
 }
 
-/* --- RESULTADOS E CARDS --- */
+/* --- CARDS E RESULTADOS --- */
 .results {
     display: flex;
     flex-direction: column;
@@ -172,7 +172,7 @@ input:focus {
     animation: slideUp 0.3s ease-out;
 }
 
-/* Cores das Classes */
+/* Cores Dinâmicas */
 .class-0 { border-left-color: #94a3b8; }
 .class-1 { border-left-color: #a855f7; }
 .class-2 { border-left-color: #ef4444; }
@@ -211,7 +211,7 @@ input:focus {
 .empty-state { text-align: center; color: var(--subtext); font-style: italic; padding: 2rem; }
 mark { background-color: #fde047; color: #000; padding: 0 2px; border-radius: 2px; }
 
-/* --- BREADCRUMB (Hierarquia Interativa) --- */
+/* --- BREADCRUMB (Caminho Completo) --- */
 .breadcrumb {
     display: block;
     font-size: 0.75rem;
@@ -220,19 +220,9 @@ mark { background-color: #fde047; color: #000; padding: 0 2px; border-radius: 2p
     font-weight: 500;
     opacity: 0.9;
     
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s ease;
-    
-    white-space: nowrap; 
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 4px 0;
-}
-
-.breadcrumb:hover {
-    color: #2563eb;
-    text-decoration: underline;
+    /* Configuração para quebrar linha se for longo */
+    white-space: normal; 
+    line-height: 1.4; 
 }
 
 .breadcrumb::before {
@@ -263,7 +253,7 @@ mark { background-color: #fde047; color: #000; padding: 0 2px; border-radius: 2p
         margin-top: 0; 
         line-height: 1.2; 
     }
-}
+} /* Fechamento correto da media query */
 
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
