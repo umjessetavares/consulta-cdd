@@ -39,7 +39,7 @@ body {
     transition: background-color 0.3s;
 }
 
-/* --- ESTILO DO BOTÃO --- */
+/* --- ESTILO DO BOTÃO TEMA --- */
 .theme-btn {
     position: absolute;
     top: 1.5rem;
@@ -72,7 +72,51 @@ p.subtitle {
     text-align: center;
 }
 
-/* --- Input e Botão Limpar --- */
+/* --- SELETOR DE BASE (CDD / CDU) --- */
+.db-selector {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.radio-label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--subtext);
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.2s;
+    background-color: var(--bg);
+    border: 1px solid transparent;
+}
+
+.radio-label:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+}
+
+input[type="radio"]:checked + span {
+    color: #2563eb;
+    font-weight: 800;
+}
+
+[data-theme="dark"] input[type="radio"]:checked + span {
+    color: #60a5fa;
+}
+
+input[type="radio"] {
+    accent-color: #2563eb; 
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+/* --- INPUT E BUSCA --- */
 .search-wrapper {
     position: relative;
     display: flex;
@@ -111,7 +155,7 @@ input:focus {
     border-radius: 50%;
 }
 
-/* --- Cartões e Cores --- */
+/* --- RESULTADOS E CARDS --- */
 .results {
     display: flex;
     flex-direction: column;
@@ -128,7 +172,7 @@ input:focus {
     animation: slideUp 0.3s ease-out;
 }
 
-/* Cores Dinâmicas por Classe Dewey */
+/* Cores das Classes */
 .class-0 { border-left-color: #94a3b8; }
 .class-1 { border-left-color: #a855f7; }
 .class-2 { border-left-color: #ef4444; }
@@ -140,7 +184,6 @@ input:focus {
 .class-8 { border-left-color: #6366f1; }
 .class-9 { border-left-color: #14b8a6; }
 
-/* Ajustes específicos para Modo Escuro nos cards */
 [data-theme="dark"] .level-card {
     background-color: #1e293b;
     border-top: 1px solid #334155;
@@ -165,125 +208,44 @@ input:focus {
 .level-content { display: flex; flex-direction: column; }
 .level-code { font-family: 'Courier New', monospace; font-weight: 800; font-size: 1.2rem; color: #334155; }
 .level-desc { font-weight: 500; line-height: 1.4; }
-.desc-missing { color: #d97706; font-style: italic; }
 .empty-state { text-align: center; color: var(--subtext); font-style: italic; padding: 2rem; }
 mark { background-color: #fde047; color: #000; padding: 0 2px; border-radius: 2px; }
+
+/* --- BREADCRUMB (Hierarquia Interativa) --- */
+.breadcrumb {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--subtext);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    opacity: 0.9;
+    
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 4px 0;
+}
+
+.breadcrumb:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.breadcrumb::before {
+    content: '📂 ';
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
 
 @keyframes slideUp {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Ajuste para Celular (Media Query) --- */
+/* --- RESPONSIVIDADE --- */
 @media (max-width: 480px) {
-    .theme-btn {
-        top: 15px;
-        right: 15px;
-        font-size: 1.3rem;
-    }
-
-    /* Aumenta o espaço no topo do container para o título descer */
-    .container {
-        padding-top: 4.5rem !important;
-        padding-left: 1.2rem;
-        padding-right: 1.2rem;
-    }
-    
-    h1 {
-        font-size: 1.4rem;
-        margin-top: 0;
-        line-height: 1.2;
-    }
-}
-/* Barra de rolagem personalizada (Webkit - Chrome, Edge, Safari) */
-::-webkit-scrollbar {
-    width: 8px;
-}
-::-webkit-scrollbar-track {
-    background: var(--bg);
-}
-::-webkit-scrollbar-thumb {
-    background-color: var(--subtext);
-    border-radius: 4px;
-}
-
-/* Foco acessível melhorado */
-button:focus-visible, input:focus-visible {
-    outline: 2px solid #2563eb;
-    outline-offset: 2px;
-}
-
-/* Esconder elementos desnecessários na hora de imprimir */
-@media print {
-    .search-wrapper, .theme-btn, p.subtitle {
-        display: none;
-    }
-    .container {
-        box-shadow: none;
-        max-width: 100%;
-    }
-}
-
-.breadcrumb {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--subtext);
-    margin-bottom: 0.4rem;
-    font-weight: 500;
-    opacity: 0.8;
-    
-    /* ADICIONE ISTO: */
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.breadcrumb:hover {
-    color: var(--text); /* Fica mais escuro ao passar o mouse */
-    text-decoration: underline;
-}
-/* --- Seletor de Base (CDD / CDU) --- */
-.db-selector {
-    display: flex;
-    justify-content: center;
-    gap: 2rem; /* Espaço entre os botões */
-    margin-bottom: 1.5rem;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-}
-
-.radio-label {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--subtext);
-    padding: 8px 16px;
-    border-radius: 20px;
-    transition: all 0.2s;
-    background-color: var(--bg);
-    border: 1px solid transparent;
-}
-
-/* Efeito ao passar o mouse */
-.radio-label:hover {
-    background-color: rgba(37, 99, 235, 0.1);
-}
-
-/* Quando selecionado (A mágica do CSS para destacar o texto) */
-input[type="radio"]:checked + span {
-    color: #2563eb; /* Azul */
-    font-weight: 800;
-}
-
-/* No modo escuro */
-[data-theme="dark"] input[type="radio"]:checked + span {
-    color: #60a5fa; /* Azul mais claro */
-}
-
-input[type="radio"] {
-    accent-color: #2563eb; 
-    transform: scale(1.2); /* Aumenta um pouco a bolinha */
-    cursor: pointer;
-}
+    .theme-btn { top
