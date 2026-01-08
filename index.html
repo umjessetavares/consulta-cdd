@@ -5,16 +5,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
-    <meta name="referrer" content="no-referrer">
     <meta name="description" content="Consulta rápida e offline da Classificação Decimal de Dewey (CDD) e CDU.">
-    <meta name="robots" content="index, follow">
-    
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://umjessetavares.github.io/consulta-cdd/"> 
-    <meta property="og:title" content="Consulta CDD/CDU - Rápido e Offline">
-    <meta property="og:description" content="Ferramenta para bibliotecários. Consulte CDD e CDU instantaneamente.">
-    <meta property="og:image" content="icon-512.png">
-    
     <title>Consulta CDD/CDU</title>
     
     <link rel="manifest" href="manifest.json">
@@ -26,39 +17,70 @@
 <div class="container">
     <button id="themeBtn" class="theme-btn" aria-label="Alternar tema">🌙</button>
     
-    <h1>Busca de códigos CDD/CDU</h1>
-    <p class="subtitle">Selecione a base e digite o código ou assunto</p>
+    <h1>Consulta CDD/CDU</h1>
 
-    <div class="db-selector">
-        <label class="radio-label">
-            <input type="radio" name="database" value="cdd" checked>
-            <span>CDD</span>
-        </label>
-        <label class="radio-label">
-            <input type="radio" name="database" value="cdu">
-            <span>CDU</span>
-        </label>
+    <div class="view-tabs">
+        <button id="tabSearch" class="tab-btn active">🔍 Procura</button>
+        <button id="tabBrowse" class="tab-btn">📂 Navegação</button>
     </div>
 
-    <div class="search-wrapper">
-        <input 
-            type="text" 
-            id="searchInput" 
-            placeholder="Buscar na CDD..." 
-            autocomplete="off" 
-            aria-label="Buscar código"
-            maxlength="50"
-        >
-        <button id="clearBtn" class="clear-btn" aria-label="Limpar busca">✕</button>
+    <div id="viewSearch" class="view-content">
+        <div class="db-selector">
+            <label class="radio-label">
+                <input type="radio" name="dbType" value="cdd" checked>
+                CDD
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="dbType" value="cdu">
+                CDU
+            </label>
+        </div>
+
+        <div class="search-wrapper">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Digite código ou assunto..." 
+                autocomplete="off" 
+                maxlength="50"
+            >
+            <button id="clearBtn" class="clear-btn" aria-label="Limpar busca">✕</button>
+        </div>
+
+        <div id="resultsArea" class="results">
+            <div class="empty-state">Introduza um termo para pesquisar.</div>
+        </div>
     </div>
 
-    <div id="resultsArea" class="results">
-        <div class="empty-state">Faça sua consulta!</div>
+    <div id="viewBrowse" class="view-content" style="display: none;">
+        <div class="db-selector">
+            <label class="radio-label">
+                <input type="radio" name="dbType" value="cdd" checked>
+                CDD
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="dbType" value="cdu">
+                CDU
+            </label>
+        </div>
+        
+        <div class="browse-container">
+            <div id="browseBreadcrumb" class="browse-breadcrumb"></div>
+            <div id="browseList" class="browse-list"></div>
+        </div>
     </div>
 </div>
 
 <script src="dados_cdd.js"></script>
 <script src="dados_cdu.js"></script>
 <script src="app.js"></script>
+
+<script>
+    // Registro do Service Worker para funcionar offline
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(() => console.log('Service Worker registrado!'));
+    }
+</script>
 </body>
 </html>
