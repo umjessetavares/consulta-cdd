@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta CDD/CDU</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=force_update_v2"> 
+    <link rel="stylesheet" href="style.css?v=history_v1"> 
     <link rel="icon" type="image/png" href="icon-192.png">
 </head>
 <body>
@@ -34,6 +34,9 @@
             <input type="text" id="searchInput" placeholder="Digite código ou assunto..." autocomplete="off">
             <button id="clearBtn" class="clear-btn">✕</button>
         </div>
+
+        <div id="searchHistory" class="history-container"></div>
+
         <div id="resultsArea" class="results">
             <div class="empty-state">Introduza um termo para pesquisar.</div>
         </div>
@@ -61,7 +64,6 @@
 <script src="dados_cdu.js"></script>
 <script src="app.js"></script>
 <script>
-    // Registro do SW apenas se não for local, para evitar erros no console
     if('serviceWorker' in navigator && window.location.protocol.indexOf('http') === 0) {
         navigator.serviceWorker.register('./service-worker.js');
     }
