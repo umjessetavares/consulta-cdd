@@ -5,6 +5,7 @@
  */
 const baseCDU = [
     // --- TABELAS AUXILIARES ---
+    /**
     { code: "(81)", desc: "Brasil (Lugar)" },
     { code: "(038)", desc: "Dicionários (Forma)" },
     { code: "(091)", desc: "História (Forma)" },
@@ -12,7 +13,7 @@ const baseCDU = [
     { code: "(=111)", desc: "Língua Inglesa" },
     { code: "\"19\"", desc: "Século XX (Tempo)" },
     { code: "\"20\"", desc: "Século XXI (Tempo)" },
-
+ */
     // --- CLASSE 0 ---
     { code: "0", desc: "Ciência e conhecimento. Organização. Informática. Informação. Documentação. Biblioteconomia" },
     { code: "00", desc: "Prolegómenos. Fundamentos do conhecimento e da cultura" },
