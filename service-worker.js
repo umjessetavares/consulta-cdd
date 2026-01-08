@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cdd-cache-v30';
+const CACHE_NAME = 'cdd-cache-v32';
 const urlsToCache = [
   './',
   './index.html',
