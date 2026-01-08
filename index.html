@@ -5,16 +5,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
-    <meta name="referrer" content="no-referrer">
-    <meta name="description" content="Consulta rápida e offline da Classificação Decimal de Dewey (CDD) e CDU.">
-    <meta name="robots" content="index, follow">
-    
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://umjessetavares.github.io/consulta-cdd/"> 
-    <meta property="og:title" content="Consulta CDD/CDU - Rápido e Offline">
-    <meta property="og:description" content="Ferramenta para bibliotecários. Consulte CDD e CDU instantaneamente.">
-    <meta property="og:image" content="icon-512.png">
-    
+    <meta name="description" content="Consulta rápida de códigos CDD e CDU.">
     <title>Consulta CDD/CDU</title>
     
     <link rel="manifest" href="manifest.json">
@@ -26,39 +17,51 @@
 <div class="container">
     <button id="themeBtn" class="theme-btn" aria-label="Alternar tema">🌙</button>
     
-    <h1>Busca de códigos CDD/CDU</h1>
-    <p class="subtitle">Selecione a base e digite o código ou assunto</p>
-
+    <h1>Busca CDD/CDU</h1>
+    
     <div class="db-selector">
         <label class="radio-label">
             <input type="radio" name="database" value="cdd" checked>
-            <span>CDD</span>
+            CDD
         </label>
         <label class="radio-label">
             <input type="radio" name="database" value="cdu">
-            <span>CDU</span>
+            CDU
         </label>
     </div>
 
-    <div class="search-wrapper">
-        <input 
-            type="text" 
-            id="searchInput" 
-            placeholder="Buscar na CDD..." 
-            autocomplete="off" 
-            aria-label="Buscar código"
-            maxlength="50"
-        >
-        <button id="clearBtn" class="clear-btn" aria-label="Limpar busca">✕</button>
+    <div class="input-group">
+        <div class="search-wrapper">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Buscar na CDD..." 
+                autocomplete="off" 
+                aria-label="Buscar código"
+                maxlength="50"
+            >
+            <button id="clearBtn" class="clear-btn" aria-label="Limpar busca">✕</button>
+        </div>
+        <button id="browseBtn" class="browse-btn" title="Navegar por Tópicos">📂</button>
+    </div>
+
+    <div id="browseArea" class="browse-container" style="display: none;">
+        <div id="browseBreadcrumb" class="browse-breadcrumb"></div>
+        <div id="browseList" class="browse-list"></div>
     </div>
 
     <div id="resultsArea" class="results">
-        <div class="empty-state">Faça sua consulta!</div>
+        <div class="empty-state">Digite algo ou clique em 📂 para explorar.</div>
     </div>
 </div>
 
 <script src="dados_cdd.js"></script>
 <script src="dados_cdu.js"></script>
 <script src="app.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js');
+    }
+</script>
 </body>
 </html>
