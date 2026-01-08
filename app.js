@@ -79,11 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             browseBreadcrumb.appendChild(document.createTextNode(' › '));
             const span = document.createElement('span'); 
             span.className = 'crumb'; 
-            
-            // --- MUDANÇA AQUI: Removi o "truncate" ---
-            // Agora exibe o Código + Nome completo
             span.innerText = `${step.code} ${step.desc}`; 
-            
             span.onclick = () => { currentBrowsePath = currentBrowsePath.slice(0, i + 1); renderBrowse(); };
             browseBreadcrumb.appendChild(span);
         });
@@ -140,8 +136,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...new Set(parents)].sort((a,b) => a.code.length - b.code.length);
     }
 
-    searchInput.oninput = (e) => { clearBtn.style.display = e.target.value ? 'block' : 'none'; performSearch(e.target.value); };
-    clearBtn.onclick = () => { searchInput.value = ''; performSearch(''); searchInput.focus(); clearBtn.style.display = 'none'; };
+    // --- EVENTOS DE INPUT E ESC ---
+    searchInput.oninput = (e) => { 
+        clearBtn.style.display = e.target.value ? 'block' : 'none'; 
+        performSearch(e.target.value); 
+    };
+
+    // AQUI ESTÁ A NOVA FUNÇÃO ESC
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            searchInput.value = '';
+            performSearch('');
+            clearBtn.style.display = 'none';
+            searchInput.focus();
+        }
+    });
+
+    clearBtn.onclick = () => { 
+        searchInput.value = ''; 
+        performSearch(''); 
+        searchInput.focus(); 
+        clearBtn.style.display = 'none'; 
+    };
     
     const themeBtn = document.getElementById('themeBtn');
     themeBtn.onclick = () => {
