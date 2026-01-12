@@ -1,228 +1,320 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- ELEMENTOS DO DOM ---
     const tabs = { search: document.getElementById('tabSearch'), browse: document.getElementById('tabBrowse') };
     const views = { search: document.getElementById('viewSearch'), browse: document.getElementById('viewBrowse') };
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
     const browseList = document.getElementById('browseList');
-    const browseBreadcrumb = document.getElementById('browseBreadcrumb');
     const clearBtn = document.getElementById('clearBtn');
-    // NOVO ELEMENTO
     const historyContainer = document.getElementById('searchHistory');
+    const toggleSwitch = document.getElementById('checkbox');
+    const themeIcon = document.getElementById('theme-icon');
+    const offlineIcon = document.getElementById('offline-icon');
 
-    let currentBrowsePath = []; 
+    // --- SETUP INICIAL ---
+    const getDB = (type) => (type === 'cdu' ? (typeof baseCDU !== 'undefined' ? baseCDU : []) : (typeof baseCDD !== 'undefined' ? baseCDD : []));
+    
+    // Tema e Offline
+    const setTheme = (t) => {
+        document.documentElement.setAttribute('data-theme', t);
+        localStorage.setItem('theme', t);
+        if(toggleSwitch) toggleSwitch.checked = (t === 'dark');
+        if(themeIcon) themeIcon.innerText = (t === 'dark') ? '☀️' : '🌙';
+    };
+    setTheme(localStorage.getItem('theme') || 'light');
+    if(toggleSwitch) toggleSwitch.addEventListener('change', e => setTheme(e.target.checked ? 'dark' : 'light'));
+    
+    const updateStatus = () => { if(offlineIcon) offlineIcon.style.display = navigator.onLine ? 'none' : 'inline-block'; };
+    window.addEventListener('online', updateStatus); window.addEventListener('offline', updateStatus); updateStatus();
 
-    // --- CARREGAR HISTÓRICO AO INICIAR ---
-    renderHistory();
-
-    // --- SINCRONIZAÇÃO ---
-    document.querySelectorAll('input[name^="dbType"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const val = e.target.value;
-            const searchRadio = document.querySelector(`input[name="dbTypeSearch"][value="${val}"]`);
-            const browseRadio = document.querySelector(`input[name="dbTypeBrowse"][value="${val}"]`);
-            if(searchRadio) searchRadio.checked = true;
-            if(browseRadio) browseRadio.checked = true;
-            
-            currentBrowsePath = [];
-            if (views.browse.style.display === 'block') renderBrowse();
-            if (searchInput.value) performSearch(searchInput.value);
-        });
-    });
-
+    // --- NAVEGAÇÃO ENTRE ABAS ---
+    function switchView(viewName) {
+        views.search.style.display = (viewName === 'search') ? 'block' : 'none';
+        views.browse.style.display = (viewName === 'browse') ? 'block' : 'none';
+        tabs.search.classList.toggle('active', viewName === 'search');
+        tabs.browse.classList.toggle('active', viewName === 'browse');
+        if (viewName === 'browse') initTree(); // Inicia a árvore
+    }
     tabs.search.onclick = () => switchView('search');
     tabs.browse.onclick = () => switchView('browse');
 
-    function switchView(viewName) {
-        Object.keys(views).forEach(v => {
-            views[v].style.display = (v === viewName) ? 'block' : 'none';
-            tabs[v].classList.toggle('active', v === viewName);
-        });
-        if (viewName === 'browse') renderBrowse();
+    // --- SOLUÇÃO 1: ANÁLISE SEMÂNTICA DE SÍMBOLOS ---
+    function analyzeCode(code, type) {
+        let label = type.toUpperCase();
+        let semanticClass = '';
+
+        if (type === 'cdu') {
+            if (code.startsWith('"') && code.endsWith('"')) { label = 'TEMPO'; semanticClass = 'semantic-badge'; }
+            else if (code.startsWith('(') && code.endsWith(')')) { 
+                if (code.startsWith('(=') || code.startsWith('(0')) label = 'FORMA';
+                else label = 'LUGAR'; 
+                semanticClass = 'semantic-badge';
+            }
+            else if (code.startsWith('=')) { label = 'LÍNGUA'; semanticClass = 'semantic-badge'; }
+        } 
+        
+        return { label, semanticClass };
     }
 
-    function getCurrentType() {
-        const el = document.querySelector('input[name="dbTypeSearch"]:checked');
-        return el ? el.value : 'cdd';
-    }
+    // --- SOLUÇÃO 3: BUSCA COM NOTAÇÕES COMPOSTAS ---
+    window.performSearch = (q) => {
+        if(!q) q = searchInput.value;
+        const type = document.querySelector('input[name="dbTypeSearch"]:checked').value;
+        const db = getDB(type);
 
-    // --- HISTÓRICO DE BUSCA (NOVO) ---
-    function saveToHistory(term) {
-        if (!term || term.length < 3) return; // Só salva termos relevantes
+        if (!q || q.trim().length < 2) {
+            resultsArea.innerHTML = '<div class="empty-state">Digite ao menos 2 caracteres.</div>';
+            return;
+        }
+
+        // Detecta composição (ex: 016+981 ou 016:981)
+        const separators = /[:\+]/;
+        if (separators.test(q)) {
+            const parts = q.split(separators).map(p => p.trim()).filter(p => p.length > 0);
+            if (parts.length > 1) {
+                renderCompoundResult(parts, db, type);
+                return;
+            }
+        }
+
+        // Busca Normal
+        const norm = t => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const terms = norm(q).split(' ').filter(t => t.trim().length > 0);
+
+        const found = db.filter(item => {
+            const dNorm = norm(item.desc);
+            const cNorm = item.code.toLowerCase();
+            return terms.every(t => dNorm.includes(t) || cNorm.includes(t));
+        }).sort((a, b) => (a.code === q ? -1 : 1));
+
+        renderResults(found, terms, type);
+    };
+
+    function renderCompoundResult(parts, db, type) {
+        resultsArea.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'level-card compound-card';
         
-        let history = JSON.parse(localStorage.getItem('searchHistory')) || [];
-        // Remove se já existir para colocar no topo
-        history = history.filter(h => h !== term);
-        // Adiciona no início
-        history.unshift(term);
-        // Mantém apenas os últimos 5
-        history = history.slice(0, 5);
-        
-        localStorage.setItem('searchHistory', JSON.stringify(history));
-        renderHistory();
-    }
+        let htmlParts = '';
+        let validParts = 0;
 
-    function renderHistory() {
-        const history = JSON.parse(localStorage.getItem('searchHistory')) || [];
-        historyContainer.innerHTML = '';
-        
-        if (history.length === 0) return;
-
-        const label = document.createElement('div');
-        label.style.width = '100%';
-        label.style.fontSize = '12px';
-        label.style.color = '#94a3b8';
-        label.style.marginBottom = '4px';
-        label.innerText = 'Recentes:';
-        historyContainer.appendChild(label);
-
-        history.forEach(term => {
-            const tag = document.createElement('span');
-            tag.className = 'history-tag';
-            tag.innerText = term;
-            tag.onclick = () => {
-                searchInput.value = term;
-                performSearch(term);
-            };
-            historyContainer.appendChild(tag);
-        });
-    }
-
-    // --- PROCURA ---
-    function performSearch(q) {
-        const type = getCurrentType();
-        const activeDB = (type === 'cdu') ? baseCDU : baseCDD;
-        
-        if (!q || q.trim() === '') { resultsArea.innerHTML = '<div class="empty-state">Introduza um termo.</div>'; return; }
-
-        // Salva no histórico se o usuário parou de digitar (debounce simples visual)
-        // Na prática, vamos salvar apenas quando tiver resultados relevantes
-        
-        const normalizedQuery = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const stopWords = ['de', 'do', 'da', 'e', 'a', 'o', 'em', 'para', 'com', 'no', 'na', 'dos', 'das'];
-        const terms = normalizedQuery.split(' ').filter(t => t.length > 0 && !stopWords.includes(t));
-
-        if (terms.length === 0) { resultsArea.innerHTML = '<div class="empty-state">Seja mais específico.</div>'; return; }
-
-        let found = activeDB.filter(i => {
-            const cleanDesc = i.desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const cleanCode = i.code.toLowerCase();
-            return terms.every(term => cleanCode.includes(term) || cleanDesc.includes(term));
-        }).map(i => ({ ...i, path: getParents(i.code, activeDB, type) }));
-
-        found.sort((a, b) => {
-            const aCodeMatch = a.code.toLowerCase() === normalizedQuery;
-            const bCodeMatch = b.code.toLowerCase() === normalizedQuery;
-            if (aCodeMatch && !bCodeMatch) return -1;
-            if (!aCodeMatch && bCodeMatch) return 1;
-            return a.code.length - b.code.length;
+        parts.forEach(partCode => {
+            const match = db.find(d => d.code === partCode) || { code: partCode, desc: "(Não encontrado na base)" };
+            if(match.desc !== "(Não encontrado na base)") validParts++;
+            htmlParts += `
+                <div class="compound-part-tag">
+                    <b>${match.code}</b>: ${match.desc}
+                </div>
+            `;
         });
 
-        renderResultsUI(found, terms, type.toUpperCase());
+        if (validParts === 0) {
+            resultsArea.innerHTML = '<div class="empty-state">Nenhum dos códigos da composição foi encontrado.</div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="level-tag">SÍNTESE DETECTADA (${type.toUpperCase()})</div>
+            <div class="level-code">${parts.join(' + ')}</div>
+            <div class="level-desc">Assunto Composto / Relação</div>
+            <div class="compound-parts">${htmlParts}</div>
+        `;
+        resultsArea.appendChild(container);
     }
 
-    function renderResultsUI(results, terms, label) {
+    function renderResults(results, terms, type) {
         resultsArea.innerHTML = results.length ? '' : '<div class="empty-state">Nada encontrado.</div>';
-        const highlightRegex = new RegExp(`(${terms.join('|')})`, 'gi');
+        const db = getDB(type);
 
         results.slice(0, 50).forEach(item => {
+            const parents = getParents(item.code, db, type);
+            const { label, semanticClass } = analyzeCode(item.code, type);
             const color = item.code.replace(/[^0-9]/g, '').charAt(0) || '0';
-            const card = document.createElement('div'); 
-            card.className = `level-card class-${color}`;
             
-            // Ao clicar num resultado, salva a busca no histórico!
-            card.onclick = () => saveToHistory(document.getElementById('searchInput').value);
+            const card = document.createElement('div');
+            card.className = `level-card class-${color}`;
+            card.onclick = () => saveToHistory(searchInput.value);
 
-            const pathHTML = item.path && item.path.length ? `<div class="breadcrumb">📂 ${item.path.map(p => `<b>${p.code}</b> ${p.desc}`).join(' › ')}</div>` : '';
-            const highlightedDesc = item.desc.replace(highlightRegex, '<mark>$1</mark>');
+            let pathHTML = '';
+            if (parents.length > 0) {
+                const pathStr = parents.map(p => `<b>${p.code}</b> ${p.desc}`).join(' › '); // Correção: Breadcrumb corrido
+                pathHTML = `<div class="breadcrumb">📂 ${pathStr}</div>`;
+            }
 
-            card.innerHTML = `${pathHTML}<div class="level-tag">${label}</div><div class="level-code">${item.code}</div><div class="level-desc">${highlightedDesc}</div>`;
+            const regex = new RegExp(`(${terms.join('|')})`, 'gi');
+            
+            card.innerHTML = `
+                ${pathHTML}
+                <div>
+                    <span class="level-tag ${semanticClass}">${label}</span>
+                </div>
+                <div class="level-code">${item.code}</div>
+                <div class="level-desc">${item.desc.replace(regex, '<mark>$1</mark>')}</div>
+            `;
             resultsArea.appendChild(card);
         });
     }
 
-    // ... (Resto do código de Navegação e Parents igual ao anterior) ...
-    function renderBrowse() {
-        const type = getCurrentType();
-        const activeDB = (type === 'cdu') ? baseCDU : baseCDD;
-        const parentCode = currentBrowsePath.length > 0 ? currentBrowsePath[currentBrowsePath.length - 1].code : '';
-        const children = findChildren(parentCode, activeDB, type);
-        renderBrowseUI(children, activeDB, type);
-    }
+    // --- SOLUÇÃO 4: ÁRVORE HIERÁRQUICA (TREE VIEW) ---
+    function initTree() {
+        browseList.innerHTML = ''; // Limpa a lista antiga
+        browseList.className = 'tree-container';
+        const type = document.querySelector('input[name="dbTypeSearch"]:checked').value;
+        const db = getDB(type);
 
-    function findChildren(parent, db, type) {
-        return db.filter(item => {
-            if (item.code === parent) return false;
-            if (type === 'cdd') {
-                if (parent === '') return item.code.length === 3 && item.code.endsWith('00');
-                if (parent.endsWith('00')) return item.code.startsWith(parent.charAt(0)) && item.code.endsWith('0') && item.code.length === 3;
-                if (parent.endsWith('0') && !parent.endsWith('00')) return item.code.startsWith(parent.substring(0, 2)) && !item.code.endsWith('0') && !item.code.includes('.');
-                return item.code.startsWith(parent + '.');
-            } else {
-                if (parent === '') return /^\d$/.test(item.code) || item.code.startsWith('(') || item.code.startsWith('"') || item.code.startsWith('=');
-                if (!item.code.startsWith(parent)) return false;
-                const isGrandChild = db.some(other => other.code !== parent && other.code !== item.code && other.code.startsWith(parent) && item.code.startsWith(other.code));
-                return !isGrandChild;
-            }
-        }).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-    }
-
-    function renderBrowseUI(items, activeDB, type) {
-        browseBreadcrumb.innerHTML = '';
-        const home = document.createElement('span'); home.className = 'crumb'; home.innerText = '🏠 Início';
-        home.onclick = () => { currentBrowsePath = []; renderBrowse(); };
-        browseBreadcrumb.appendChild(home);
-        currentBrowsePath.forEach((step, i) => {
-            browseBreadcrumb.appendChild(document.createTextNode(' › '));
-            const span = document.createElement('span'); span.className = 'crumb'; 
-            span.innerText = `${step.code} ${step.desc}`; 
-            span.onclick = () => { currentBrowsePath = currentBrowsePath.slice(0, i + 1); renderBrowse(); };
-            browseBreadcrumb.appendChild(span);
-        });
-        browseList.innerHTML = items.length ? '' : '<div class="empty-state">Fim da hierarquia.</div>';
-        items.forEach(item => {
-            const hasKids = findChildren(item.code, activeDB, type).length > 0;
-            const div = document.createElement('div'); div.className = 'folder-item';
-            div.innerHTML = `<span style="margin-right:10px">${hasKids ? '📁' : '📄'}</span> <div><b>${item.code}</b> <span>${item.desc}</span></div>`;
-            div.onclick = () => {
-                if (hasKids) { currentBrowsePath.push(item); renderBrowse(); }
-                else { switchView('search'); searchInput.value = item.code; performSearch(item.code); }
-            };
-            browseList.appendChild(div);
+        // Renderiza apenas os nós raiz (0-9)
+        const roots = db.filter(item => isRoot(item.code, type));
+        roots.forEach(root => {
+            browseList.appendChild(createTreeNode(root, db, type));
         });
     }
 
+    function isRoot(code, type) {
+        if (type === 'cdd') return code.length === 3 && code.endsWith('00'); // 000, 100...
+        return /^[0-9]$/.test(code); // CDU: 0, 1, 2...
+    }
+
+    function createTreeNode(item, db, type) {
+        const details = document.createElement('details');
+        details.className = 'tree-node';
+        
+        const summary = document.createElement('summary');
+        summary.className = 'tree-summary';
+        
+        // Verifica se tem filhos para decidir o ícone
+        const hasChildren = checkChildren(item.code, db, type);
+        const icon = hasChildren ? '▶' : '•';
+        
+        summary.innerHTML = `
+            <span class="tree-icon">${icon}</span>
+            <span class="tree-code">${item.code}</span>
+            <span>${item.desc}</span>
+        `;
+
+        details.appendChild(summary);
+
+        if (hasChildren) {
+            // Lazy Load: Carrega filhos apenas ao abrir
+            const content = document.createElement('div');
+            content.className = 'tree-content';
+            
+            details.addEventListener('toggle', function onToggle() {
+                if (details.open && content.childElementCount === 0) {
+                    const children = findTreeChildren(item.code, db, type);
+                    children.forEach(child => {
+                        content.appendChild(createTreeNode(child, db, type));
+                    });
+                }
+            });
+            details.appendChild(content);
+        } else {
+            // Se for folha, clica para buscar
+            summary.addEventListener('click', (e) => {
+                e.preventDefault(); // Evita toggle
+                switchView('search');
+                searchInput.value = item.code;
+                performSearch(item.code);
+            });
+        }
+
+        return details;
+    }
+
+    function checkChildren(parent, db, type) {
+        // Otimização: Retorna true assim que achar 1 filho
+        return db.some(item => isChild(parent, item.code, type));
+    }
+
+    function findTreeChildren(parent, db, type) {
+        return db.filter(item => isChild(parent, item.code, type))
+                 .sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+    }
+
+    function isChild(parent, code, type) {
+        if (code === parent) return false;
+        if (type === 'cdd') {
+            // Lógica estrita CDD: 000 -> 010 -> 011 -> 011.1
+            if (parent.endsWith('00')) return code.startsWith(parent[0]) && code.endsWith('0') && code.length === 3 && code !== parent;
+            if (parent.endsWith('0') && !parent.endsWith('00')) return code.startsWith(parent.slice(0,2)) && code.length === 3 && !code.endsWith('0');
+            if (!parent.includes('.') && code.includes('.')) return code.startsWith(parent + '.') && !code.slice(parent.length+1).includes('.'); 
+            return false;
+        } else {
+            // Lógica CDU: Pai deve ser prefixo, mas não avô
+            if (!code.startsWith(parent)) return false;
+            // Filtra descendentes diretos (simplificado)
+            const suffix = code.slice(parent.length);
+            // Evita pular níveis (ex: 3 -> 33) se houver intermediários, 
+            // mas como a base é simples, assumimos prefixo direto.
+            return suffix.length > 0 && !suffix.includes('.') && !suffix.includes('::'); // Ajuste básico
+        }
+    }
+
+    // --- UTILITÁRIOS (PAIS E HISTÓRICO) ---
     function getParents(code, db, type) {
-        const parents = [];
-        for (let i = 1; i < code.length; i++) {
-            const prefix = code.substring(0, i).replace(/\.$/, '');
-            const match = db.find(d => d.code === prefix);
-            if (match) parents.push(match);
+        let parentCodes = new Set();
+        let parents = [];
+        // (Mesma lógica robusta da versão anterior)
+        if (type === 'cdd') {
+            const levels = [];
+            if (code.length >= 1) levels.push(code.charAt(0) + '00'); 
+            if (code.length >= 2) levels.push(code.substring(0, 2) + '0'); 
+            if (code.includes('.')) levels.push(code.split('.')[0]); 
+            levels.forEach(lvl => {
+                if (lvl !== code && !parentCodes.has(lvl)) {
+                    const match = db.find(d => d.code === lvl);
+                    if (match) { parents.push(match); parentCodes.add(lvl); }
+                }
+            });
+        } else {
+            for (let i = 1; i < code.length; i++) {
+                const sub = code.substring(0, i);
+                if (sub !== code && !parentCodes.has(sub)) {
+                    const match = db.find(d => d.code === sub);
+                    if (match) { parents.push(match); parentCodes.add(sub); }
+                }
+            }
         }
-        if (type === 'cdd' && code.length >= 3) {
-            const hundred = code.charAt(0) + '00';
-            const match = db.find(d => d.code === hundred);
-            if (match && !parents.includes(match) && match.code !== code) parents.unshift(match);
-        }
-        return [...new Set(parents)].sort((a,b) => a.code.length - b.code.length);
+        return parents.sort((a, b) => a.code.length - b.code.length);
     }
 
-    searchInput.oninput = (e) => { 
-        clearBtn.style.display = e.target.value ? 'block' : 'none'; 
-        performSearch(e.target.value); 
-    };
+    // Gestos e Inputs
+    let startX = 0;
+    document.addEventListener('touchstart', e => startX = e.changedTouches[0].screenX, {passive: true});
+    document.addEventListener('touchend', e => {
+        const diff = startX - e.changedTouches[0].screenX;
+        if (Math.abs(diff) > 80) switchView(diff > 0 ? 'search' : 'browse');
+    }, {passive: true});
 
-    searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') saveToHistory(searchInput.value); // Salva ao dar Enter
-        if (e.key === 'Escape') { e.preventDefault(); searchInput.value = ''; performSearch(''); clearBtn.style.display = 'none'; searchInput.focus(); }
+    searchInput.oninput = (e) => {
+        clearBtn.style.display = e.target.value ? 'block' : 'none';
+        performSearch(e.target.value);
+    };
+    clearBtn.onclick = () => { searchInput.value = ''; performSearch(''); clearBtn.style.display = 'none'; searchInput.focus(); };
+
+    document.querySelectorAll('input[name^="dbType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const val = e.target.value;
+            document.querySelectorAll(`input[value="${val}"]`).forEach(r => r.checked = true);
+            if (views.browse.style.display === 'block') initTree();
+            if (searchInput.value) performSearch(searchInput.value);
+        });
     });
 
-    clearBtn.onclick = () => { searchInput.value = ''; performSearch(''); searchInput.focus(); clearBtn.style.display = 'none'; };
-    
-    const themeBtn = document.getElementById('themeBtn');
-    themeBtn.onclick = () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
-        localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    };
-    if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    function saveToHistory(term) {
+        if (!term || term.length < 3) return;
+        let h = JSON.parse(localStorage.getItem('sh')) || [];
+        h = [term, ...h.filter(x => x !== term)].slice(0, 5);
+        localStorage.setItem('sh', JSON.stringify(h));
+        renderHistory();
+    }
+    function renderHistory() {
+        const h = JSON.parse(localStorage.getItem('sh')) || [];
+        historyContainer.innerHTML = h.length ? '<div style="font-size:12px;color:var(--subtext)">Recentes:</div>' : '';
+        h.forEach(t => {
+            const s = document.createElement('span'); s.className = 'history-tag'; s.innerText = t;
+            s.onclick = () => { searchInput.value = t; performSearch(t); };
+            historyContainer.appendChild(s);
+        });
+    }
+    renderHistory();
 });

@@ -5,12 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta CDD/CDU</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=history_v1"> 
+    <link rel="stylesheet" href="style.css"> 
     <link rel="icon" type="image/png" href="icon-192.png">
 </head>
 <body>
 <div class="container">
-    <button id="themeBtn" class="theme-btn">🌙</button>
+    <div class="theme-switch-wrapper">
+        <span id="offline-icon" style="display: none; font-size: 1.2rem; margin-right: 5px;" title="Você está offline">⚠️</span>
+        <label class="theme-switch" for="checkbox">
+            <input type="checkbox" id="checkbox" />
+            <div class="slider round"></div>
+        </label>
+        <span id="theme-icon">🌙</span>
+    </div>
+
     <h1>Consulta CDD/CDU</h1>
 
     <div class="view-tabs">
@@ -29,14 +37,11 @@
                 <span>CDU</span>
             </label>
         </div>
-
         <div class="search-wrapper">
             <input type="text" id="searchInput" placeholder="Digite código ou assunto..." autocomplete="off">
-            <button id="clearBtn" class="clear-btn">✕</button>
+            <button id="clearBtn" class="clear-btn" style="display:none;">✕</button>
         </div>
-
         <div id="searchHistory" class="history-container"></div>
-
         <div id="resultsArea" class="results">
             <div class="empty-state">Introduza um termo para pesquisar.</div>
         </div>
@@ -54,7 +59,7 @@
             </label>
         </div>
         <div class="browse-container">
-            <div id="browseBreadcrumb" class="browse-breadcrumb"></div>
+            <div id="browseBreadcrumb" class="breadcrumb"></div>
             <div id="browseList" class="browse-list"></div>
         </div>
     </div>
@@ -64,9 +69,7 @@
 <script src="dados_cdu.js"></script>
 <script src="app.js"></script>
 <script>
-    if('serviceWorker' in navigator && window.location.protocol.indexOf('http') === 0) {
-        navigator.serviceWorker.register('./service-worker.js');
-    }
+    if('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');
 </script>
 </body>
 </html>
