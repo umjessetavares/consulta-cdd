@@ -10,22 +10,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleSwitch = document.getElementById('checkbox');
     const themeIcon = document.getElementById('theme-icon');
     const offlineIcon = document.getElementById('offline-icon');
-    const toast = document.getElementById('toast'); // Feedback visual
+    const toast = document.getElementById('toast');
 
-    // --- FUNÇÕES DE SEGURANÇA E UTILITÁRIOS ---
+    // Container para Favoritos (Criado dinamicamente se não existir no HTML)
+    let favContainer = document.getElementById('favContainer');
+    if (!favContainer) {
+        favContainer = document.createElement('div');
+        favContainer.id = 'favContainer';
+        favContainer.className = 'history-container'; // Reutiliza estilo do histórico
+        // Insere antes do histórico
+        historyContainer.parentNode.insertBefore(favContainer, historyContainer);
+    }
+
+    // --- UTILITÁRIOS E SEGURANÇA ---
     
-    // 1. Sanitização de HTML (Previne XSS)
-    const escapeHTML = (str) => {
-        if (!str) return '';
-        return str.replace(/[&<>"']/g, (m) => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-        }[m]));
-    };
-
-    // 2. Escape de Regex (Previne Crash com caracteres como '[', '*', '(')
     const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // 3. Debounce (Performance na digitação)
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -34,14 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 4. Copiar para Clipboard
     function copyToClipboard(text) {
         if (navigator.clipboard) {
             navigator.clipboard.writeText(text).then(() => {
                 showToast(`Copiado: ${text}`);
             }).catch(err => console.error('Erro ao copiar', err));
         } else {
-            // Fallback para navegadores muito antigos (opcional)
             alert(`Código: ${text}`);
         }
     }
@@ -52,10 +50,50 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { toast.style.display = 'none'; }, 2000);
     }
 
+    // --- GERENCIAMENTO DE FAVORITOS ---
+    function toggleFavorite(code, desc) {
+        let favs = JSON.parse(localStorage.getItem('favs')) || [];
+        const index = favs.findIndex(f => f.code === code);
+        
+        if (index > -1) {
+            favs.splice(index, 1); // Remove
+            showToast(`Removido dos favoritos`);
+        } else {
+            favs.push({ code, desc }); // Adiciona
+            showToast(`Salvo em favoritos`);
+        }
+        localStorage.setItem('favs', JSON.stringify(favs));
+        renderFavorites();
+        
+        // Atualiza ícone se estiver vendo resultados
+        if (searchInput.value) performSearch(searchInput.value); 
+    }
+
+    function isFavorite(code) {
+        const favs = JSON.parse(localStorage.getItem('favs')) || [];
+        return favs.some(f => f.code === code);
+    }
+
+    function renderFavorites() {
+        const favs = JSON.parse(localStorage.getItem('favs')) || [];
+        favContainer.innerHTML = favs.length ? '<div style="font-size:12px;color:var(--primary);margin-top:10px;width:100%">⭐ Favoritos:</div>' : '';
+        
+        favs.forEach(f => {
+            const s = document.createElement('span'); 
+            s.className = 'history-tag';
+            s.style.borderColor = 'var(--primary)'; // Destaque visual
+            s.textContent = f.code;
+            s.onclick = () => { 
+                searchInput.value = f.code; 
+                performSearch(f.code); 
+            };
+            favContainer.appendChild(s);
+        });
+    }
+
     // --- SETUP INICIAL ---
     const getDB = (type) => (type === 'cdu' ? (typeof baseCDU !== 'undefined' ? baseCDU : []) : (typeof baseCDD !== 'undefined' ? baseCDD : []));
     
-    // Tema e Offline
     const setTheme = (t) => {
         document.documentElement.setAttribute('data-theme', t);
         localStorage.setItem('theme', t);
@@ -68,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateStatus = () => { if(offlineIcon) offlineIcon.style.display = navigator.onLine ? 'none' : 'inline-block'; };
     window.addEventListener('online', updateStatus); window.addEventListener('offline', updateStatus); updateStatus();
 
-    // --- NAVEGAÇÃO ENTRE ABAS ---
+    // --- NAVEGAÇÃO ---
     function switchView(viewName) {
         views.search.style.display = (viewName === 'search') ? 'block' : 'none';
         views.browse.style.display = (viewName === 'browse') ? 'block' : 'none';
@@ -79,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tabs.search.onclick = () => switchView('search');
     tabs.browse.onclick = () => switchView('browse');
 
-    // --- ANÁLISE SEMÂNTICA ---
+    // --- ANÁLISE E BUSCA ---
     function analyzeCode(code, type) {
         let label = type.toUpperCase();
         let semanticClass = '';
@@ -95,17 +133,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return { label, semanticClass };
     }
 
-    // --- BUSCA ---
     const performSearchLogic = (q) => {
         const type = document.querySelector('input[name="dbTypeSearch"]:checked').value;
         const db = getDB(type);
 
         if (!q || q.trim().length < 2) {
-            resultsArea.innerHTML = '<div class="empty-state">Digite ao menos 2 caracteres.</div>';
+            resultsArea.innerHTML = '';
+            const msg = document.createElement('div');
+            msg.className = 'empty-state';
+            msg.textContent = 'Digite ao menos 2 caracteres.';
+            resultsArea.appendChild(msg);
             return;
         }
 
-        // Detecta composição
+        // Busca Composta
         const separators = /[:\+]/;
         if (separators.test(q)) {
             const parts = q.split(separators).map(p => p.trim()).filter(p => p.length > 0);
@@ -128,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderResults(found, terms, type);
     };
 
-    // Aplica o Debounce na função de busca
     window.performSearch = debounce((q) => performSearchLogic(q), 300);
 
     function renderCompoundResult(parts, db, type) {
@@ -136,39 +176,67 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.createElement('div');
         container.className = 'level-card compound-card';
         
-        let htmlParts = '';
-        let validParts = 0;
+        const title = document.createElement('div');
+        title.className = 'level-tag';
+        title.textContent = `SÍNTESE DETECTADA (${type.toUpperCase()})`;
+        container.appendChild(title);
 
+        const codeDisplay = document.createElement('div');
+        codeDisplay.className = 'level-code';
+        codeDisplay.textContent = parts.join(' + ');
+        container.appendChild(codeDisplay);
+
+        const descDisplay = document.createElement('div');
+        descDisplay.className = 'level-desc';
+        descDisplay.textContent = 'Assunto Composto / Relação';
+        container.appendChild(descDisplay);
+
+        const partsContainer = document.createElement('div');
+        partsContainer.className = 'compound-parts';
+
+        let validParts = 0;
         parts.forEach(partCode => {
-            const match = db.find(d => d.code === partCode) || { code: partCode, desc: "(Não encontrado na base)" };
-            if(match.desc !== "(Não encontrado na base)") validParts++;
+            const match = db.find(d => d.code === partCode) || { code: partCode, desc: "(Não encontrado)" };
+            if(match.desc !== "(Não encontrado)") validParts++;
             
-            // SEGURANÇA: escapeHTML
-            htmlParts += `
-                <div class="compound-part-tag">
-                    <b>${escapeHTML(match.code)}</b>: ${escapeHTML(match.desc)}
-                </div>
-            `;
+            const partTag = document.createElement('div');
+            partTag.className = 'compound-part-tag';
+            
+            const b = document.createElement('b');
+            b.textContent = match.code;
+            partTag.appendChild(b);
+            partTag.appendChild(document.createTextNode(`: ${match.desc}`));
+            
+            partsContainer.appendChild(partTag);
         });
 
         if (validParts === 0) {
-            resultsArea.innerHTML = '<div class="empty-state">Nenhum dos códigos da composição foi encontrado.</div>';
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.textContent = 'Nenhum código encontrado.';
+            resultsArea.appendChild(empty);
             return;
         }
 
-        // SEGURANÇA: escapeHTML nos inputs do usuário
-        container.innerHTML = `
-            <div class="level-tag">SÍNTESE DETECTADA (${type.toUpperCase()})</div>
-            <div class="level-code">${escapeHTML(parts.join(' + '))}</div>
-            <div class="level-desc">Assunto Composto / Relação</div>
-            <div class="compound-parts">${htmlParts}</div>
-        `;
+        container.appendChild(partsContainer);
         resultsArea.appendChild(container);
     }
 
+    // --- RENDERIZAÇÃO SEGURA (SEM INNERHTML) ---
     function renderResults(results, terms, type) {
-        resultsArea.innerHTML = results.length ? '' : '<div class="empty-state">Nada encontrado.</div>';
+        resultsArea.innerHTML = ''; 
+        
+        if (results.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.textContent = 'Nada encontrado.';
+            resultsArea.appendChild(emptyState);
+            return;
+        }
+
         const db = getDB(type);
+        const escapedTerms = terms.map(escapeRegExp);
+        const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
 
         results.slice(0, 50).forEach(item => {
             const parents = getParents(item.code, db, type);
@@ -177,43 +245,76 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const card = document.createElement('div');
             card.className = `level-card class-${color}`;
+            card.style.position = 'relative'; // Para posicionar a estrela
+
+            // Ícone de Favorito (Estrela)
+            const star = document.createElement('span');
+            star.style.position = 'absolute';
+            star.style.top = '10px';
+            star.style.right = '10px';
+            star.style.cursor = 'pointer';
+            star.style.fontSize = '1.2rem';
+            star.textContent = isFavorite(item.code) ? '★' : '☆';
+            star.style.color = isFavorite(item.code) ? 'gold' : 'var(--subtext)';
             
-            // UX: Clique copia para clipboard
+            star.onclick = (e) => {
+                e.stopPropagation(); // Evita copiar ao clicar na estrela
+                toggleFavorite(item.code, item.desc);
+            };
+            card.appendChild(star);
+            
+            // Clique no card (Copiar)
             card.onclick = () => {
-                saveToHistory(item.code + " " + item.desc); // Salva no histórico
-                copyToClipboard(item.code); // Copia
+                saveToHistory(item.code + " " + item.desc);
+                copyToClipboard(item.code);
             };
 
-            let pathHTML = '';
+            // Breadcrumb
             if (parents.length > 0) {
-                // SEGURANÇA: escapeHTML no breadcrumb
-                const pathStr = parents.map(p => `<b>${escapeHTML(p.code)}</b> ${escapeHTML(p.desc)}`).join(' › ');
-                pathHTML = `<div class="breadcrumb">📂 ${pathStr}</div>`;
+                const breadcrumbDiv = document.createElement('div');
+                breadcrumbDiv.className = 'breadcrumb';
+                breadcrumbDiv.textContent = '📂 '; 
+
+                parents.forEach((p, index) => {
+                    const b = document.createElement('b');
+                    b.textContent = p.code;
+                    breadcrumbDiv.appendChild(b);
+                    const separator = index < parents.length - 1 ? ' › ' : '';
+                    breadcrumbDiv.appendChild(document.createTextNode(` ${p.desc}${separator}`));
+                });
+                card.appendChild(breadcrumbDiv);
             }
 
-            // SEGURANÇA: escapeRegExp
-            // Primeiro escapamos o termo para criar o regex seguro
-            const escapedTerms = terms.map(escapeRegExp);
-            const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
-            
-            // SEGURANÇA: O texto original deve ser escapado antes do highlight? 
-            // Abordagem segura simples: Escapar tudo, depois tentar dar highlight é complexo.
-            // Abordagem híbrida: O replace insere tags <mark> que são seguras.
-            // Mas o item.desc original precisa ser limpo? Sim.
-            
-            const safeDesc = escapeHTML(item.desc);
-            // Aplicamos o regex sobre o texto já limpo (note que isso pode quebrar se o texto limpo tiver &amp; e buscarmos &)
-            // Para simplicidade e segurança máxima neste contexto educacional:
-            const highlightedDesc = safeDesc.replace(regex, '<mark>$1</mark>');
+            // Tag
+            const tagContainer = document.createElement('div');
+            const spanTag = document.createElement('span');
+            spanTag.className = `level-tag ${semanticClass}`; 
+            spanTag.textContent = label;
+            tagContainer.appendChild(spanTag);
+            card.appendChild(tagContainer);
 
-            card.innerHTML = `
-                ${pathHTML}
-                <div>
-                    <span class="level-tag ${semanticClass}">${label}</span>
-                </div>
-                <div class="level-code">${escapeHTML(item.code)}</div>
-                <div class="level-desc">${highlightedDesc}</div>
-            `;
+            // Código
+            const codeDiv = document.createElement('div');
+            codeDiv.className = 'level-code';
+            codeDiv.textContent = item.code;
+            card.appendChild(codeDiv);
+
+            // Descrição com Highlight seguro
+            const descDiv = document.createElement('div');
+            descDiv.className = 'level-desc';
+
+            const parts = item.desc.split(regex);
+            parts.forEach(part => {
+                if (part.match(regex)) {
+                    const mark = document.createElement('mark');
+                    mark.textContent = part;
+                    descDiv.appendChild(mark);
+                } else if (part.length > 0) {
+                    descDiv.appendChild(document.createTextNode(part));
+                }
+            });
+            card.appendChild(descDiv);
+
             resultsArea.appendChild(card);
         });
     }
@@ -238,19 +339,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function createTreeNode(item, db, type) {
         const details = document.createElement('details');
         details.className = 'tree-node';
+        
         const summary = document.createElement('summary');
         summary.className = 'tree-summary';
         
         const hasChildren = checkChildren(item.code, db, type);
         const icon = hasChildren ? '▶' : '•';
         
-        // SEGURANÇA: escapeHTML
-        summary.innerHTML = `
-            <span class="tree-icon">${icon}</span>
-            <span class="tree-code">${escapeHTML(item.code)}</span>
-            <span>${escapeHTML(item.desc)}</span>
-        `;
+        // Montagem segura do Summary
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'tree-icon';
+        iconSpan.textContent = icon;
+        
+        const codeSpan = document.createElement('span');
+        codeSpan.className = 'tree-code';
+        codeSpan.textContent = item.code;
 
+        const descSpan = document.createElement('span');
+        descSpan.textContent = item.desc;
+
+        summary.appendChild(iconSpan);
+        summary.appendChild(codeSpan);
+        summary.appendChild(descSpan);
         details.appendChild(summary);
 
         if (hasChildren) {
@@ -325,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return parents.sort((a, b) => a.code.length - b.code.length);
     }
 
-    // Gestos e Inputs
+    // Gestos, Inputs e Inicialização
     let startX = 0;
     document.addEventListener('touchstart', e => startX = e.changedTouches[0].screenX, {passive: true});
     document.addEventListener('touchend', e => {
@@ -335,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchInput.oninput = (e) => {
         clearBtn.style.display = e.target.value ? 'block' : 'none';
-        performSearch(e.target.value); // Usa a versão com debounce
+        performSearch(e.target.value); 
     };
     clearBtn.onclick = () => { searchInput.value = ''; performSearch(''); clearBtn.style.display = 'none'; searchInput.focus(); };
 
@@ -350,21 +460,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveToHistory(term) {
         if (!term || term.length < 3) return;
-        // Limita tamanho do termo para evitar spam no localStorage
         if(term.length > 50) term = term.substring(0, 50) + "...";
         let h = JSON.parse(localStorage.getItem('sh')) || [];
         h = [term, ...h.filter(x => x !== term)].slice(0, 5);
         localStorage.setItem('sh', JSON.stringify(h));
         renderHistory();
     }
+    
     function renderHistory() {
         const h = JSON.parse(localStorage.getItem('sh')) || [];
         historyContainer.innerHTML = h.length ? '<div style="font-size:12px;color:var(--subtext)">Recentes:</div>' : '';
         h.forEach(t => {
-            const s = document.createElement('span'); s.className = 'history-tag'; 
-            s.innerText = escapeHTML(t); // SEGURANÇA no histórico
+            const s = document.createElement('span'); 
+            s.className = 'history-tag'; 
+            s.textContent = t;
             s.onclick = () => { 
-                // Extrai apenas o código se houver espaço (ex: "340 Direito")
                 const codeOnly = t.split(' ')[0];
                 searchInput.value = codeOnly; 
                 performSearch(codeOnly); 
@@ -372,5 +482,8 @@ document.addEventListener('DOMContentLoaded', () => {
             historyContainer.appendChild(s);
         });
     }
+
+    // Inicialização final
     renderHistory();
+    renderFavorites(); // Exibe favoritos ao carregar
 });
