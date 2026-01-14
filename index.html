@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    
     <title>Consulta CDD/CDU</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css"> 
@@ -45,6 +48,7 @@
         <div id="resultsArea" class="results">
             <div class="empty-state">Introduza um termo para pesquisar.</div>
         </div>
+        <div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; display: none; z-index: 1000;">Código copiado!</div>
     </div>
 
     <div id="viewBrowse" class="view-content" style="display: none;">
@@ -65,11 +69,16 @@
     </div>
 </div>
 
-<script src="dados_cdd.js"></script>
-<script src="dados_cdu.js"></script>
-<script src="app.js"></script>
+<script src="dados_cdd.js" defer></script>
+<script src="dados_cdu.js" defer></script>
+<script src="app.js" defer></script>
 <script>
-    if('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');
+    if('serviceWorker' in navigator) {
+        // Registro do SW pode ser feito após o load para priorizar conteúdo
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js');
+        });
+    }
 </script>
 </body>
 </html>
