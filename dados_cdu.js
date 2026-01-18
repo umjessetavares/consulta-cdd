@@ -5,15 +5,15 @@
  */
 const baseCDU = [
     // --- TABELAS PRINCIPAIS (RAIZ) ---
-    { code: "0", desc: "CIÊNCIA E CONHECIMENTO. ORGANIZAÇÃO. INFORMÁTICA. INFORMAÇÃO. DOCUMENTAÇÃO. BIBLIOTECONOMIA. INSTITUIÇÕES. PUBLICAÇÕES" },
-    { code: "1", desc: "FILOSOFIA. PSICOLOGIA" },
-    { code: "2", desc: "RELIGIÃO. TEOLOGIA" },
-    { code: "3", desc: "CIÊNCIAS SOCIAIS" },
-    { code: "5", desc: "MATEMÁTICA. CIÊNCIAS NATURAIS" },
-    { code: "6", desc: "CIÊNCIAS APLICADAS. MEDICINA. TECNOLOGIA" },
-    { code: "7", desc: "ARTE. RECREAÇÃO. ENTRETENIMENTO. DESPORTO" },
-    { code: "8", desc: "LÍNGUA. LINGUÍSTICA. LITERATURA" },
-    { code: "9", desc: "GEOGRAFIA. BIOGRAFIA. HISTÓRIA" },
+    { code: "0", desc: "Ciência e conhecimento. Organização. Informática. Informação. Documentação. Biblioteconomia. Instituições. Publicações" },
+    { code: "1", desc: "Filosofia. Psicologia" },
+    { code: "2", desc: "Religião. Teologia" },
+    { code: "3", desc: "Ciências sociais" },
+    { code: "5", desc: "Matemática. Ciências naturais" },
+    { code: "6", desc: "Ciências aplicadas. Medicina. Tecnologia" },
+    { code: "7", desc: "Arte. Recreação. Entretenimento. Desporto" },
+    { code: "8", desc: "Língua. Linguística. Literatura" },
+    { code: "9", desc: "Geografia. Biografia. História" },
 
     // --- CLASSE 0: CIÊNCIA E CONHECIMENTO ---
     { code: "00", desc: "Prolegómenos. Fundamentos do conhecimento e da cultura. Propadéutica" },
