@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
     
     <title>Consulta CDD/CDU</title>
@@ -15,21 +14,21 @@
 <div class="container">
     <div class="theme-switch-wrapper">
         <span id="offline-icon" style="display: none; font-size: 1.2rem; margin-right: 5px;" title="Você está offline">⚠️</span>
-        <label class="theme-switch" for="checkbox">
+        <label class="theme-switch" for="checkbox" aria-label="Alternar tema escuro">
             <input type="checkbox" id="checkbox" />
             <div class="slider round"></div>
         </label>
-        <span id="theme-icon">🌙</span>
+        <span id="theme-icon" aria-hidden="true">🌙</span>
     </div>
 
     <h1>Consulta CDD/CDU</h1>
 
-    <div class="view-tabs">
-        <button id="tabSearch" class="tab-btn active">🔍 Procura</button>
-        <button id="tabBrowse" class="tab-btn">📂 Navegação</button>
+    <div class="view-tabs" role="tablist">
+        <button id="tabSearch" class="tab-btn active" role="tab" aria-selected="true" aria-controls="viewSearch">🔍 Procura</button>
+        <button id="tabBrowse" class="tab-btn" role="tab" aria-selected="false" aria-controls="viewBrowse">📂 Navegação</button>
     </div>
 
-    <div id="viewSearch" class="view-content">
+    <div id="viewSearch" class="view-content" role="tabpanel">
         <div class="db-selector">
             <label class="radio-label">
                 <input type="radio" name="dbTypeSearch" value="cdd" checked>
@@ -40,18 +39,24 @@
                 <span>CDU</span>
             </label>
         </div>
+        
         <div class="search-wrapper">
-            <input type="text" id="searchInput" placeholder="Digite código ou assunto..." autocomplete="off">
-            <button id="clearBtn" class="clear-btn" style="display:none;">✕</button>
+            <input type="text" id="searchInput" placeholder="Digite código ou assunto..." autocomplete="off" aria-label="Campo de busca">
+            <button id="clearBtn" class="clear-btn" style="display:none;" aria-label="Limpar busca">✕</button>
         </div>
+
+        <div id="favContainer" class="history-container"></div>
+        
         <div id="searchHistory" class="history-container"></div>
-        <div id="resultsArea" class="results">
+        
+        <div id="resultsArea" class="results" aria-live="polite">
             <div class="empty-state">Introduza um termo para pesquisar.</div>
         </div>
-        <div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; display: none; z-index: 1000;">Código copiado!</div>
+        
+        <div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; display: none; z-index: 1000;" role="alert"></div>
     </div>
 
-    <div id="viewBrowse" class="view-content" style="display: none;">
+    <div id="viewBrowse" class="view-content" style="display: none;" role="tabpanel">
         <div class="db-selector">
             <label class="radio-label">
                 <input type="radio" name="dbTypeBrowse" value="cdd" checked>
@@ -63,7 +68,6 @@
             </label>
         </div>
         <div class="browse-container">
-            <div id="browseBreadcrumb" class="breadcrumb"></div>
             <div id="browseList" class="browse-list"></div>
         </div>
     </div>
@@ -71,10 +75,10 @@
 
 <script src="dados_cdd.js" defer></script>
 <script src="dados_cdu.js" defer></script>
+<script src="sinonimos.js" defer></script> 
 <script src="app.js" defer></script>
 <script>
     if('serviceWorker' in navigator) {
-        // Registro do SW pode ser feito após o load para priorizar conteúdo
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js');
         });

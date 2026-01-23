@@ -1,4 +1,8 @@
-const CACHE_NAME = 'cdd-cache-v34';
+// service-worker.js
+
+// ATENÇÃO: Mudei de v34 para v35 para forçar a atualização do novo app.js
+const CACHE_NAME = 'cdd-cache-v35'; 
+
 const urlsToCache = [
   './',
   './index.html',
@@ -10,22 +14,17 @@ const urlsToCache = [
   './icon-192.png'
 ];
 
-// 1 INSTALAÇÃO
+// O resto do arquivo permanece idêntico à versão original
 self.addEventListener('install', (event) => {
-  // Força o SW a "pular a fila" e instalar imediatamente
   self.skipWaiting(); 
-  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(urlsToCache))
   );
 });
 
-// 2 ATIVAÇÃO E LIMPEZA
 self.addEventListener('activate', (event) => {
-  // Toma o controle da página imediatamente, sem precisar recarregar
   event.waitUntil(clients.claim());
-
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -40,26 +39,17 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3 INTERCEPTAÇÃO (Estratégia: Network First)
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        // Se a internet funcionou:
-        // 1 Clona a resposta (porque ela só pode ser lida uma vez)
         const responseToCache = networkResponse.clone();
-        
-        // 2 Atualiza o cache automaticamente com a versão nova
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
         });
-        
-        // 3 Entrega a versão da internet para o usuário
         return networkResponse;
       })
       .catch(() => {
-        // Se a internet falhou (OFFLINE):
-        // Retorna o que estiver salvo no cache
         return caches.match(event.request);
       })
   );
